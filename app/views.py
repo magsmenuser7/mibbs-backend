@@ -32,7 +32,7 @@ class LoginUser(APIView):
             password = serializer.validated_data['password']
 
             try:
-                user = UserProfile.objects.get(email=email)
+                user = UserProfile.objects.filter(email=email).first()
                 if user.password == password:
                     return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
                 else:
