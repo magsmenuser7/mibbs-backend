@@ -1,43 +1,86 @@
-from django.shortcuts import render
+
+# views.py
+from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import UserProfile
-from .serializers import LoginSerializer
-
-# Create your views here.
-
-# accounts/views.py
+from django.contrib.auth import authenticate,login
+from django.contrib.auth import login as django_login
+from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
+from .models import Users
+from django.contrib.auth import logout
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import UserProfileSerializer
+from django.views.decorators.csrf import csrf_exempt
 
-class RegisterUser(APIView):
+
+
+
+
+class RegisterView(APIView):
     def post(self, request):
-        serializer = UserProfileSerializer(data=request.data)
+        serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "User registered successfully!"}, status=status.HTTP_201_CREATED)
+            user = serializer.save()
+            return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
-
-class LoginUser(APIView):
+class LoginView(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
-            email = serializer.validated_data['email']
+            identifier = serializer.validated_data['identifier']
             password = serializer.validated_data['password']
 
-            try:
-                user = UserProfile.objects.filter(email=email).first()
-                if user.password == password:
-                    return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
-                else:
-                    return Response({"error": "Invalid password"}, status=status.HTTP_401_UNAUTHORIZED)
-            except UserProfile.DoesNotExist:
-                return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-        
+            user = authenticate(request, identifier=identifier, password=password)
+
+            if user:
+                login(request, user)
+                user_data = UserSerializer(user).data
+                return Response({'message': 'Login successful', 'user': user_data})
+            else:
+                return Response({'non_field_errors': ['Unable to log in with provided credentials.']},
+                                status=status.HTTP_400_BAD_REQUEST)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+@csrf_exempt
+def logout_view(request):
+    if request.method == "POST":
+        logout(request)
+        return JsonResponse({"message": "Logged out"})
+    return JsonResponse({"error": "Method not allowed"}, status=405)
+
+
+
+# class LogoutView(APIView):
+#     def post(self, request):
+#         logout(request)  # Clears the session
+#         return Response({'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
+    
+
+
+
+
+
+
+
+# class LoginView(APIView):
+#     def post(self, request):
+#         serializer = LoginSerializer(data=request.data)
+#         if serializer.is_valid():
+#             email = serializer.validated_data.get('email')
+#             password = serializer.validated_data.get('password')
+#             user = authenticate(request, email=email, password=password )
+#             if user:
+#                 user_data = UserSerializer(user).data
+#                 return Response({'message': 'Login successful', 'user': user_data})
+#             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
