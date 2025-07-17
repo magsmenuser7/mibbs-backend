@@ -28,8 +28,8 @@ SECRET_KEY = 'django-insecure--_)07le$^boy4!twy%4$nu#katf51fr@4bd_5w*nncz7^w)r3e
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-ALLOWED_HOSTS = ['*']
-# ALLOWED_HOSTS = ['93.127.199.26', 'api.mibbs.ai', 'www.api.mibbs.ai']
+# ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['93.127.199.26', 'api.mibbs.ai', 'www.api.mibbs.ai']
 
 
 # Application definition
