@@ -13,6 +13,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
+from google.oauth2 import id_token
+from google.auth.transport import requests
 
 
 
@@ -46,6 +48,20 @@ class LoginView(APIView):
                                 status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+def google_login(request):
+    token = request.POST.get('token')
+    try:
+        idinfo = id_token.verify_oauth2_token(token, requests.Request(), "1064045400562-lljdlndc03j31gh3e3njeegd4p79ms4l.apps.googleusercontent.com")
+
+        user_email = idinfo['email']
+        user_name = idinfo['name']
+        # Handle user login / creation here
+
+    except ValueError:
+        return JsonResponse({'error': 'Invalid token'}, status=400)
     
 
 
