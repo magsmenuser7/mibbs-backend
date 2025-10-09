@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate,login
 from django.contrib.auth import login as django_login
-from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
+from .serializers import RegisterSerializer, LoginSerializer, UserSerializer,AssessmentSerializer
 from .models import Users
 from django.contrib.auth import logout
 from rest_framework.views import APIView
@@ -15,6 +15,9 @@ from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
 from google.oauth2 import id_token
 from google.auth.transport import requests
+from rest_framework import status, permissions
+from django.contrib.auth.models import User
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 
@@ -81,11 +84,6 @@ def logout_view(request):
     
 
 
-
-
-
-
-
 # class LoginView(APIView):
 #     def post(self, request):
 #         serializer = LoginSerializer(data=request.data)
@@ -100,3 +98,117 @@ def logout_view(request):
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+
+
+
+
+
+class Register(APIView):
+    permission_classes = [permissions.AllowAny]
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()  # Save user to DB
+            return Response({
+                'success': True,
+                'message': 'User registered successfully!',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email
+                }
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class Login(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get("email")
+            password = serializer.validated_data.get("password")
+
+            # Authenticate using email (USERNAME_FIELD = "email")
+            user = authenticate(request, email=email, password=password)
+
+            if user is None:
+                return Response({"detail": "Invalid email or password."}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({
+                'success': True,
+                'message': 'Login successful!',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                }
+            }, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+
+class AssessmentCreateView(APIView):
+    permission_classes = [permissions.AllowAny]   # change to IsAuthenticated if you require login
+    def post(self, request):
+        serializer = AssessmentSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            a = serializer.save()
+            return Response({'success': True, 'assessment_id': a.id}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+
+
+
+
+
+
+
+# class Register(APIView):
+#     permission_classes = [permissions.AllowAny]
+#     def post(self, request):
+#         serializer = RegisterSerializer(data=request.data)
+#         if serializer.is_valid():
+#             user = serializer.save()
+#             refresh = RefreshToken.for_user(user)
+#             return Response({
+#                 'success': True,
+#                 'user': {'id': user.id, 'username': user.username, 'email': user.email},
+#                 'access': str(refresh.access_token),
+#                 'refresh': str(refresh),
+#             }, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class Login(APIView):
+#     permission_classes = [permissions.AllowAny]
+
+#     def post(self, request):
+#         serializer = LoginSerializer(data=request.data)
+#         if serializer.is_valid():
+#             email = serializer.validated_data["email"]
+#             password = serializer.validated_data["password"]
+
+#             try:
+#                 user_obj = User.objects.get(email=email)
+#             except User.DoesNotExist:
+#                 return Response({"detail": "Invalid email or password."}, status=400)
+
+#             user = authenticate(username=user_obj.username, password=password)
+#             if not user:
+#                 return Response({"detail": "Invalid email or password."}, status=400)
+
+#             refresh = RefreshToken.for_user(user)
+#             return Response({
+#                 "success": True,
+#                 "message": "Login successful.",
+#                 "user": {"id": user.id, "username": user.username, "email": user.email},
+#                 "access": str(refresh.access_token),
+#                 "refresh": str(refresh)
+#             })
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
