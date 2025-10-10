@@ -18,6 +18,10 @@ from google.auth.transport import requests
 from rest_framework import status, permissions
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.conf import settings
+
+
+
 
 
 
@@ -77,27 +81,6 @@ def logout_view(request):
 
 
 
-# class LogoutView(APIView):
-#     def post(self, request):
-#         logout(request)  # Clears the session
-#         return Response({'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
-    
-
-
-# class LoginView(APIView):
-#     def post(self, request):
-#         serializer = LoginSerializer(data=request.data)
-#         if serializer.is_valid():
-#             email = serializer.validated_data.get('email')
-#             password = serializer.validated_data.get('password')
-#             user = authenticate(request, email=email, password=password )
-#             if user:
-#                 user_data = UserSerializer(user).data
-#                 return Response({'message': 'Login successful', 'user': user_data})
-#             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 
 
@@ -106,6 +89,7 @@ def logout_view(request):
 
 class Register(APIView):
     permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -113,6 +97,7 @@ class Register(APIView):
             return Response({
                 'success': True,
                 'message': 'User registered successfully!',
+                'environment': 'development' if settings.DEBUG else 'production',
                 'user': {
                     'id': user.id,
                     'username': user.username,
@@ -120,6 +105,7 @@ class Register(APIView):
                 }
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class Login(APIView):
     permission_classes = [permissions.AllowAny]
@@ -139,25 +125,29 @@ class Login(APIView):
             return Response({
                 'success': True,
                 'message': 'Login successful!',
+                'environment': 'development' if settings.DEBUG else 'production',
                 'user': {
                     'id': user.id,
                     'username': user.username,
                     'email': user.email,
                 }
             }, status=status.HTTP_200_OK)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AssessmentCreateView(APIView):
-    permission_classes = [permissions.AllowAny]   # change to IsAuthenticated if you require login
+    permission_classes = [permissions.AllowAny]  # Change to IsAuthenticated if login required
+
     def post(self, request):
         serializer = AssessmentSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            a = serializer.save()
-            return Response({'success': True, 'assessment_id': a.id}, status=status.HTTP_201_CREATED)
+            assessment = serializer.save()
+            return Response({
+                'success': True,
+                'assessment_id': assessment.id,
+                'environment': 'development' if settings.DEBUG else 'production',
+            }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
