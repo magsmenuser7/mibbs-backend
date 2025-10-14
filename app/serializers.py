@@ -8,7 +8,7 @@ import json
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 
-User = get_user_model()
+Users = get_user_model() 
 
 
 
@@ -70,6 +70,9 @@ class LoginSerializer(serializers.Serializer):
 
 
 
+
+
+
 class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     email = serializers.EmailField()
@@ -77,30 +80,27 @@ class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=6)
     confirm_password = serializers.CharField(write_only=True, min_length=6)
 
-    class Meta:
-        model = Users
-        fields = ['username', 'email', 'phone', 'password', 'confirm_password']
+    def validate_email(self, value):
+        # 🌟 CRITICAL FIX: Checks for existing email before hitting the database
+        if Users.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("This email address is already registered.")
+        return value
 
     def validate(self, data):
         if data['password'] != data['confirm_password']:
-            raise serializers.ValidationError("Passwords do not match.")
-        data['password'] = make_password(data['password'])
-        return data
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+        return data # 💡 Removed make_password here, moved to create
 
     def create(self, validated_data):
         validated_data.pop('confirm_password')
+        # 💡 Ensure password hashing happens right before creation
+        password = validated_data.pop('password')
+        
         user = Users.objects.create(**validated_data)
+        user.set_password(password) # Use set_password for proper hashing
+        user.save()
         return user
-    
 
-
-    
-
-
-
-class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
 
 
 
@@ -131,40 +131,120 @@ class AssessmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Assessment
-        fields = [
-            'id',
-            'username', 'email', 'phone',  # linked user info
-            'businessName', 'brandStage', 'pincode', 'city', 'state', 'industry',
-            'yearsInBusiness', 'digitalMaturity', 'primaryGoals',
-            'monthlyRevenue', 'marketingSpendBand', 'exactMarketingSpend',
-            'positioning', 'competitorNotes', 'industryDetails',
-            'created_at'
-        ]
-        read_only_fields = ['id', 'created_at', 'username', 'email', 'phone']
-
-    def validate_primary_goals(self, value):
-        """Allow up to 4 primary goals"""
-        if isinstance(value, list) and len(value) > 4:
-            raise serializers.ValidationError("You can select up to 4 primary goals.")
-        return value
+        # ... (fields list)
+        read_only_fields = ['id', 'created_at', 'username', 'email', 'phone'] 
+        # 💡 IMPORTANT: Do NOT include 'user' in read_only_fields or the main fields list 
+        # if you intend to set it dynamically in the view/create method.
 
     def create(self, validated_data):
-        request = self.context.get('request')
-        user = None
-
-        if request and hasattr(request, 'user') and request.user.is_authenticated:
-            user = request.user
-        else:
-            email = request.data.get('email')
-        if email:
-            user = Users.objects.filter(email=email).first()
-
-    # Set user-related fields in assessment table
-        if user:
-            validated_data['user'] = user
-            validated_data['username'] = user.username
-            validated_data['email'] = user.email
-            validated_data['phone'] = getattr(user, 'phone', '')
+        # 🌟 Simplified FIX: Expect the 'user' object to be passed from the view 
+        # (See AssessmentCreateView below).
+        
+        # Check if user was provided (it should be, if IsAuthenticated is used)
+        if 'user' not in validated_data:
+             # This should ideally not happen if permissions are set correctly
+             raise serializers.ValidationError("User is required for assessment creation.")
 
         assessment = Assessment.objects.create(**validated_data)
         return assessment
+
+
+
+
+
+
+
+
+# class RegisterSerializer(serializers.Serializer):
+#     username = serializers.CharField(max_length=150)
+#     email = serializers.EmailField()
+#     phone = serializers.CharField(max_length=20, allow_blank=True, required=False)
+#     password = serializers.CharField(write_only=True, min_length=6)
+#     confirm_password = serializers.CharField(write_only=True, min_length=6)
+
+#     class Meta:
+#         model = Users
+#         fields = ['username', 'email', 'phone', 'password', 'confirm_password']
+
+#     def validate(self, data):
+#         if data['password'] != data['confirm_password']:
+#             raise serializers.ValidationError("Passwords do not match.")
+#         data['password'] = make_password(data['password'])
+#         return data
+
+#     def create(self, validated_data):
+#         validated_data.pop('confirm_password')
+#         user = Users.objects.create(**validated_data)
+#         return user
+    
+
+
+
+# class LoginSerializer(serializers.Serializer):
+#     email = serializers.EmailField()
+#     password = serializers.CharField(write_only=True)
+
+
+
+# class AssessmentSerializer(serializers.ModelSerializer):
+#     # Include user info (read-only)
+#     username = serializers.CharField(source='user.username', read_only=True)
+#     email = serializers.EmailField(source='user.email', read_only=True)
+#     phone = serializers.CharField(source='user.phone', read_only=True)
+
+#     # Map frontend camelCase keys to backend model fields
+#     businessName = serializers.CharField(source='business_name', required=False, allow_blank=True)
+#     brandStage = serializers.CharField(source='brand_stage', required=False, allow_blank=True)
+#     pincode = serializers.CharField(required=False, allow_blank=True)
+#     city = serializers.CharField(required=False, allow_blank=True)
+#     state = serializers.CharField(required=False, allow_blank=True)
+#     industry = serializers.CharField(required=False, allow_blank=True)
+#     yearsInBusiness = serializers.IntegerField(source='years_in_business', required=False, allow_null=True)
+#     digitalMaturity = serializers.CharField(source='digital_maturity', required=False, allow_blank=True)
+#     primaryGoals = serializers.JSONField(source='primary_goals', required=False, allow_null=True)
+#     monthlyRevenue = serializers.DecimalField(source='monthly_revenue', max_digits=20, decimal_places=2, required=False, allow_null=True)
+#     marketingSpendBand = serializers.CharField(source='marketing_spend_band', required=False, allow_blank=True)
+#     exactMarketingSpend = serializers.DecimalField(source='exact_marketing_spend', max_digits=20, decimal_places=2, required=False, allow_null=True)
+#     positioning = serializers.CharField(required=False, allow_blank=True)
+#     competitorNotes = serializers.CharField(source='competitor_notes', required=False, allow_blank=True)
+#     industryDetails = serializers.JSONField(source='industry_details', required=False, allow_null=True)
+
+#     class Meta:
+#         model = Assessment
+#         fields = [
+#             'id',
+#             'username', 'email', 'phone',  # linked user info
+#             'businessName', 'brandStage', 'pincode', 'city', 'state', 'industry',
+#             'yearsInBusiness', 'digitalMaturity', 'primaryGoals',
+#             'monthlyRevenue', 'marketingSpendBand', 'exactMarketingSpend',
+#             'positioning', 'competitorNotes', 'industryDetails',
+#             'created_at'
+#         ]
+#         read_only_fields = ['id', 'created_at', 'username', 'email', 'phone']
+
+#     def validate_primary_goals(self, value):
+#         """Allow up to 4 primary goals"""
+#         if isinstance(value, list) and len(value) > 4:
+#             raise serializers.ValidationError("You can select up to 4 primary goals.")
+#         return value
+
+#     def create(self, validated_data):
+#         request = self.context.get('request')
+#         user = None
+
+#         if request and hasattr(request, 'user') and request.user.is_authenticated:
+#             user = request.user
+#         else:
+#             email = request.data.get('email')
+#         if email:
+#             user = Users.objects.filter(email=email).first()
+
+#     # Set user-related fields in assessment table
+#         if user:
+#             validated_data['user'] = user
+#             validated_data['username'] = user.username
+#             validated_data['email'] = user.email
+#             validated_data['phone'] = getattr(user, 'phone', '')
+
+#         assessment = Assessment.objects.create(**validated_data)
+#         return assessment
