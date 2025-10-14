@@ -87,11 +87,9 @@ def logout_view(request):
 
 
 
-
-
-
 class Register(APIView):
-    # permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -110,7 +108,7 @@ class Register(APIView):
 
 
 class Login(APIView):
-    # permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -136,52 +134,22 @@ class Login(APIView):
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-
 
 
 class AssessmentCreateView(APIView):
-    # 🌟 SECURITY FIX: Only authenticated users should submit assessments
-    permission_classes = [permissions.IsAuthenticated] 
+    permission_classes = [permissions.AllowAny]  # Change to IsAuthenticated if login required
 
     def post(self, request):
-        # Pass the request context to the serializer for any needed logic
         serializer = AssessmentSerializer(data=request.data, context={'request': request})
-        
         if serializer.is_valid():
-            # 🌟 LINKAGE FIX: Explicitly pass the authenticated user to the serializer's create method
-            assessment = serializer.save(user=request.user) 
-            
+            assessment = serializer.save()
             return Response({
                 'success': True,
                 'assessment_id': assessment.id,
-                'message': 'Assessment saved successfully!',
                 'environment': 'development' if settings.DEBUG else 'production',
             }, status=status.HTTP_201_CREATED)
-            
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-# class AssessmentCreateView(APIView):
-#     permission_classes = [permissions.AllowAny]  # Change to IsAuthenticated if login required
-
-#     def post(self, request):
-#         serializer = AssessmentSerializer(data=request.data, context={'request': request})
-#         if serializer.is_valid():
-#             assessment = serializer.save()
-#             return Response({
-#                 'success': True,
-#                 'assessment_id': assessment.id,
-#                 'environment': 'development' if settings.DEBUG else 'production',
-#             }, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
-
-
-
-
 
 
 
