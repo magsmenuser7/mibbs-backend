@@ -19,6 +19,7 @@ from rest_framework import status, permissions
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
+from django.core.mail import send_mail
 
 
 
@@ -136,19 +137,88 @@ class Login(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+
+
 class AssessmentCreateView(APIView):
-    permission_classes = [permissions.AllowAny]  # Change to IsAuthenticated if login required
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         serializer = AssessmentSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             assessment = serializer.save()
+
+            # ✅ Prepare email details
+            subject = f"New Assessment Submitted: {getattr(assessment, 'business_name', 'Unknown Business')}"
+            message = f"""
+A new assessment has been submitted.
+Submitted By: {getattr(assessment.user, 'username', 'Guest')}
+Email: {getattr(assessment.user, 'email', 'N/A')}
+Phone: {getattr(assessment.user, 'phone', 'N/A')}
+Business Name: {getattr(assessment, 'business_name', '')}
+Brand Stage: {getattr(assessment, 'brand_stage', '')}
+Industry: {getattr(assessment, 'industry', '')}
+City: {getattr(assessment, 'city', '')}, {getattr(assessment, 'state', '')}
+Pincode: {getattr(assessment, 'pincode', '')}
+Years in Business: {getattr(assessment, 'years_in_business', '')}
+Monthly Revenue: {getattr(assessment, 'monthly_revenue', '')}
+Marketing Spend Band: {getattr(assessment, 'marketing_spend_band', '')}
+Exact Marketing Spend: {getattr(assessment, 'exact_marketing_spend', '')}
+Primary Goals: {getattr(assessment, 'primary_goals', '')}
+Competitor Notes: {getattr(assessment, 'competitor_notes', '')}
+
+
+
+-----------------------------------------
+Environment: {"Development" if settings.DEBUG else "Production"}
+            """
+
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    ["connectmagsmen@gmail.com"],  # 🔹 Change to your admin email
+                    fail_silently=False,
+                )
+            except Exception as e:
+                return Response({
+                    'success': True,
+                    'warning': f"Assessment saved but email failed: {str(e)}",
+                    'assessment_id': assessment.id,
+                }, status=status.HTTP_201_CREATED)
+
             return Response({
                 'success': True,
+                'message': 'Assessment created and email sent successfully.',
                 'assessment_id': assessment.id,
                 'environment': 'development' if settings.DEBUG else 'production',
             }, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+
+
+
+
+
+# class AssessmentCreateView(APIView):
+#     permission_classes = [permissions.AllowAny]  # Change to IsAuthenticated if login required
+
+#     def post(self, request):
+#         serializer = AssessmentSerializer(data=request.data, context={'request': request})
+#         if serializer.is_valid():
+#             assessment = serializer.save()
+#             return Response({
+#                 'success': True,
+#                 'assessment_id': assessment.id,
+#                 'environment': 'development' if settings.DEBUG else 'production',
+#             }, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
 
