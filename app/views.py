@@ -178,7 +178,7 @@ Environment: {"Development" if settings.DEBUG else "Production"}
                     subject,
                     message,
                     settings.DEFAULT_FROM_EMAIL,
-                    ["connectmagsmen@gmail.com"],  # 🔹 Change to your admin email
+                    ["magsmenconnect@gmail.com"],  # 🔹 Change to your admin email
                     fail_silently=False,
                 )
             except Exception as e:
