@@ -199,3 +199,5 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'magsmenconnect@gmail.com'          # your Gmail address
 EMAIL_HOST_PASSWORD = 'lhln yivw ywva ewiy'         # Gmail App Password (not your real password)
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# lhln yivw ywva ewiy app password
