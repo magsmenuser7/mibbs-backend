@@ -20,6 +20,8 @@ from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 from django.core.mail import send_mail
+from .brevo_utility import send_to_brevo
+from dotenv import load_dotenv
 
 
 
@@ -167,11 +169,33 @@ Exact Marketing Spend: {getattr(assessment, 'exact_marketing_spend', '')}
 Primary Goals: {getattr(assessment, 'primary_goals', '')}
 Competitor Notes: {getattr(assessment, 'competitor_notes', '')}
 
+Monthly Budget: {assessment.monthly_budget}
+Annual Budget: {assessment.annual_budget}
+Barchart Data: {assessment.barchart_data}
+PieChart Data: {assessment.piechart_str}
+
 
 
 -----------------------------------------
 Environment: {"Development" if settings.DEBUG else "Production"}
             """
+
+
+             # ------- Extract Required Values for Brevo --------
+            user = assessment.user
+            user_name = getattr(user, "username", "")
+            user_email = getattr(user, "email", "")
+            user_phone = getattr(user, "phone", "")
+
+            # ------- BREVO Contact add + Email Send --------
+            if user_email:
+                brevo_result = send_to_brevo(
+                    username=user_name,
+                    email=user_email,
+                    phone=user_phone
+                )
+                print("BREVO RESULT =>", brevo_result)
+            # --------------------------------------------------
 
             try:
                 send_mail(
@@ -190,36 +214,15 @@ Environment: {"Development" if settings.DEBUG else "Production"}
 
             return Response({
                 'success': True,
-                'message': 'Assessment created and email sent successfully.',
+                'message': "Assessment created, email sent & Brevo contact added successfully.",
                 'assessment_id': assessment.id,
                 'environment': 'development' if settings.DEBUG else 'production',
+                # 'message': 'Assessment created and email sent successfully.',
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-
-
-
-
-
-
-
-# class AssessmentCreateView(APIView):
-#     permission_classes = [permissions.AllowAny]  # Change to IsAuthenticated if login required
-
-#     def post(self, request):
-#         serializer = AssessmentSerializer(data=request.data, context={'request': request})
-#         if serializer.is_valid():
-#             assessment = serializer.save()
-#             return Response({
-#                 'success': True,
-#                 'assessment_id': assessment.id,
-#                 'environment': 'development' if settings.DEBUG else 'production',
-#             }, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
 
 

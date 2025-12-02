@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Users, Role, UserRole, Assessment
+from .models import Users, Role, UserRole, Assessment,BarChartData,PieChartEntry
 from simple_history.admin import SimpleHistoryAdmin
 import csv, json
 from django.http import HttpResponse
@@ -25,13 +25,27 @@ class UserRoleAdmin(SimpleHistoryAdmin):
     search_fields = ('user__username', 'role__role_name')
 
 
+# class BudgetAllocationInline(admin.TabularInline):
+#     model = BudgetAllocation
+#     extra = 0
+
+
+class BarChartDataInline(admin.TabularInline):
+    model = BarChartData   # FIXED
+    extra = 0
+
+class PieChartEntryInline(admin.TabularInline):
+    model = PieChartEntry
+    extra = 0
+
+
 
 
 @admin.action(description='Export selected assessments as Excel')
 def export_assessments_excel(modeladmin, request, queryset):
     workbook = Workbook()
     sheet = workbook.active
-    sheet.title = "Assessments"
+    sheet.title = "Assessment"
 
     # Excel Header Row
     header = [
@@ -39,7 +53,7 @@ def export_assessments_excel(modeladmin, request, queryset):
         'pincode', 'city', 'state', 'industry', 'years_in_business', 
         'digital_maturity', 'primary_goals', 'monthly_revenue', 
         'marketing_spend_band', 'exact_marketing_spend', 'positioning',
-        'competitor_notes', 'industry_details', 'created_at'
+        'competitor_notes', 'industry_details','monthly_budget','annual_budget','barchart_data','piechart_str','created_at'
     ]
     sheet.append(header)
 
@@ -65,8 +79,13 @@ def export_assessments_excel(modeladmin, request, queryset):
             a.positioning,
             a.competitor_notes,
             json.dumps(a.industry_details, ensure_ascii=False) if a.industry_details else '',
+            str(a.monthly_budget) if a.monthly_budget is not None else '',
+            str(a.annual_budget) if a.annual_budget is not None else '',
+            # json.dumps(a.budget_allocations, ensure_ascii=False) if a.budget_allocations else '',
+            json.dumps(a.barchart_data, ensure_ascii=False) if a.barchart_data else '',
+            json.dumps(list(a.pie_chart_entries.all().values('name', 'value', 'amount', 'color')), ensure_ascii=False) if hasattr(a, "pie_chart_entries") else '',
             a.created_at.isoformat(),
-        ])
+    ])
 
     # Return Excel File
     response = HttpResponse(
@@ -100,10 +119,64 @@ class AssessmentAdmin(admin.ModelAdmin):
         'positioning',
         'competitor_notes',
         'industry_details',
+        'monthly_budget',
+        'annual_budget',
+        'formatted_bar_chart_data',
+        'formatted_pie_chart_entries',
         'created_at',
     )
+
+    inlines = [BarChartDataInline, PieChartEntryInline]
+
+
+
+    #  # 👉 Display nested BudgetAllocation items in admin list row
+    # def formatted_budget_allocations(self, obj):
+    #     allocations = obj.budget_allocation_set.all()  # uses related_name from model
+    #     if not allocations:
+    #         return "No Data"
+    #     return ", ".join([f"{a.channel} ({a.percent}% → ₹{a.amount})" for a in allocations])
+    # formatted_budget_allocations.short_description = "Budget Allocation"
+
     
-    actions = [export_assessments_excel]   # ✅ replaced CSV with EXCEL
+
+    # 👉 Display nested ChannelFocus items in admin list row
+   # For Bar Chart Data (channel focus)
+    def formatted_bar_chart_data(self, obj):
+        items = obj.bar_chart_data.all()  # related_name in BarChartData
+        if not items.exists():
+            return "No Data"
+        return ", ".join([f"{i.name} ({i.percentage}% → ₹{i.amount})" for i in items])
+    formatted_bar_chart_data.short_description = "Channel Focus (Bar Chart)"
+
+# For Pie Chart Data
+    def formatted_pie_chart_entries(self, obj):
+        items = obj.pie_chart_entries.all()  # related_name in PieChartEntry
+        if not items.exists():
+            return "No Data"
+        return ", ".join([f"{i.name} ({i.value}% → ₹{i.amount})" for i in items])
+    formatted_pie_chart_entries.short_description = "Pie Chart Entries"
+
+# class BudgetAllocationAdmin(admin.ModelAdmin):
+#     list_display = ('assessment', 'channel', 'percent', 'amount')
+
+
+class BarChartDataAdmin(admin.ModelAdmin):
+    list_display = ('assessment', 'name', 'percentage', 'amount')
+
+
+class PieChartEntryAdmin(admin.ModelAdmin):
+    list_display = ('assessment', 'name', 'value', 'amount')
+
+
+
+
+
+# admin.register(BudgetAllocation, BudgetAllocationAdmin)
+admin.register(BarChartData, BarChartDataAdmin)
+admin.register(PieChartEntry,PieChartEntryAdmin)
+admin.site.register(Assessment, AssessmentAdmin)
+# admin.site.register(UserProfile)
 
 
 
@@ -202,9 +275,3 @@ class AssessmentAdmin(admin.ModelAdmin):
 #         return json.dumps(obj.industry_details, ensure_ascii=False) if obj.industry_details else ''
 #     industry_details.short_description = 'Industry Details'
 
-
-
-
-
-admin.site.register(Assessment, AssessmentAdmin)
-# admin.site.register(UserProfile)
