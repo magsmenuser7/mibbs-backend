@@ -160,7 +160,7 @@ class Assessment(models.Model):
     annual_budget = models.FloatField(default=0, null=True, blank=True)
 
     # budget_allocations = models.JSONField(default=list, blank=True)
-    barchart_data = models.TextField(default=list, blank=True)
+    # barchart_data = models.TextField(default=list, blank=True)
     piechart_str = models.TextField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -176,15 +176,15 @@ class Assessment(models.Model):
 #     amount = models.DecimalField(max_digits=12, decimal_places=2)
 
 
-class BarChartData(models.Model):
-    assessment = models.ForeignKey(
-        Assessment,
-        on_delete=models.CASCADE,
-        related_name="bar_chart_data"
-    )
-    name = models.CharField(max_length=100)
-    percentage = models.FloatField(null=True, blank=True)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
+# class BarChartData(models.Model):
+#     assessment = models.ForeignKey(
+#         Assessment,
+#         on_delete=models.CASCADE,
+#         related_name="bar_chart_data"
+#     )
+#     name = models.CharField(max_length=100)
+#     percentage = models.FloatField(null=True, blank=True)
+#     amount = models.DecimalField(max_digits=12, decimal_places=2)
 
 
 

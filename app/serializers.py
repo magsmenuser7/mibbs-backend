@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Users, Role, UserRole, Assessment,BarChartData,PieChartEntry
+from .models import Users, Role, UserRole, Assessment,PieChartEntry
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
@@ -109,10 +109,10 @@ class LoginSerializer(serializers.Serializer):
 #     percent = serializers.FloatField(required=False)
 #     amount = serializers.FloatField(required=False)
 
-class BarChartDataSerializer(serializers.Serializer):
-    name = serializers.CharField()
-    percentage = serializers.FloatField()
-    amount = serializers.FloatField(required=False)
+# class BarChartDataSerializer(serializers.Serializer):
+#     name = serializers.CharField()
+#     percentage = serializers.FloatField()
+#     amount = serializers.FloatField(required=False)
 
 class PieChartEntrySerializer(serializers.Serializer):
     name = serializers.CharField()
@@ -148,7 +148,7 @@ class AssessmentSerializer(serializers.ModelSerializer):
 
     # Nested relational fields
     # budgetAllocations = BudgetAllocationSerializer(many=True, required=False)
-    barchartdata = BarChartDataSerializer(many=True, required=False)
+    # barchartdata = BarChartDataSerializer(many=True, required=False)
     pieChartData = PieChartEntrySerializer(many=True, required=False)  # Added for pie chart
 
     class Meta:
@@ -159,7 +159,7 @@ class AssessmentSerializer(serializers.ModelSerializer):
             'yearsInBusiness', 'digitalMaturity', 'primaryGoals',
             'monthlyRevenue', 'marketingSpendBand', 'exactMarketingSpend',
             'positioning', 'competitorNotes', 'industryDetails',
-            'monthlyBudget', 'annualBudget', 'barchartdata', 'pieChartData',
+            'monthlyBudget', 'annualBudget', 'pieChartData',
             'created_at'
         ]
         read_only_fields = ['id', 'created_at', 'username', 'email', 'phone']
@@ -176,7 +176,7 @@ class AssessmentSerializer(serializers.ModelSerializer):
 
         # Extract nested fields
         # budget_allocations_data = validated_data.pop('budgetAllocations', [])
-        bar_chart_data = validated_data.pop('barchartdata', [])
+        # bar_chart_data = validated_data.pop('barchartdata', [])
         piechart_data = validated_data.pop('pieChartData', [])
 
         # Attach user if available
@@ -201,8 +201,8 @@ class AssessmentSerializer(serializers.ModelSerializer):
         #     BudgetAllocation.objects.create(assessment=assessment, **ba)
 
         # Nested ChannelFocuses
-        for cf in bar_chart_data:
-            BarChartData.objects.create(assessment=assessment, **cf)
+        # for cf in bar_chart_data:
+        #     BarChartData.objects.create(assessment=assessment, **cf)
 
         # Nested PieChartEntries
         for pc in piechart_data:

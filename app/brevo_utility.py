@@ -11,8 +11,8 @@ def send_to_brevo(email, username="", phone=""):
     api_client = ApiClient(configuration)
 
     # 1️⃣ Create Brevo Contact
-    numbers = [num.strip() for num in phone.split(",") if num.strip()]
-    phone = ", ".join(numbers)
+    # numbers = [num.strip() for num in phone.split(",") if num.strip()]
+    # phone = ", ".join(numbers)
     contacts_api = ContactsApi(api_client)
     new_contact = CreateContact(
         email=email,

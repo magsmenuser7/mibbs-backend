@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Users, Role, UserRole, Assessment,BarChartData,PieChartEntry
+from .models import Users, Role, UserRole, Assessment,PieChartEntry
 from simple_history.admin import SimpleHistoryAdmin
 import csv, json
 from django.http import HttpResponse
@@ -30,9 +30,9 @@ class UserRoleAdmin(SimpleHistoryAdmin):
 #     extra = 0
 
 
-class BarChartDataInline(admin.TabularInline):
-    model = BarChartData   # FIXED
-    extra = 0
+# class BarChartDataInline(admin.TabularInline):
+#     model = BarChartData   # FIXED
+#     extra = 0
 
 class PieChartEntryInline(admin.TabularInline):
     model = PieChartEntry
@@ -53,7 +53,7 @@ def export_assessments_excel(modeladmin, request, queryset):
         'pincode', 'city', 'state', 'industry', 'years_in_business', 
         'digital_maturity', 'primary_goals', 'monthly_revenue', 
         'marketing_spend_band', 'exact_marketing_spend', 'positioning',
-        'competitor_notes', 'industry_details','monthly_budget','annual_budget','barchart_data','piechart_str','created_at'
+        'competitor_notes', 'industry_details','monthly_budget','annual_budget','piechart_str','created_at'
     ]
     sheet.append(header)
 
@@ -82,7 +82,7 @@ def export_assessments_excel(modeladmin, request, queryset):
             str(a.monthly_budget) if a.monthly_budget is not None else '',
             str(a.annual_budget) if a.annual_budget is not None else '',
             # json.dumps(a.budget_allocations, ensure_ascii=False) if a.budget_allocations else '',
-            json.dumps(a.barchart_data, ensure_ascii=False) if a.barchart_data else '',
+            # json.dumps(a.barchart_data, ensure_ascii=False) if a.barchart_data else '',
             json.dumps(list(a.pie_chart_entries.all().values('name', 'value', 'amount', 'color')), ensure_ascii=False) if hasattr(a, "pie_chart_entries") else '',
             a.created_at.isoformat(),
     ])
@@ -121,12 +121,12 @@ class AssessmentAdmin(admin.ModelAdmin):
         'industry_details',
         'monthly_budget',
         'annual_budget',
-        'formatted_bar_chart_data',
+        # 'formatted_bar_chart_data',
         'formatted_pie_chart_entries',
         'created_at',
     )
 
-    inlines = [BarChartDataInline, PieChartEntryInline]
+    inlines = [PieChartEntryInline]
 
 
 
@@ -142,12 +142,12 @@ class AssessmentAdmin(admin.ModelAdmin):
 
     # 👉 Display nested ChannelFocus items in admin list row
    # For Bar Chart Data (channel focus)
-    def formatted_bar_chart_data(self, obj):
-        items = obj.bar_chart_data.all()  # related_name in BarChartData
-        if not items.exists():
-            return "No Data"
-        return ", ".join([f"{i.name} ({i.percentage}% → ₹{i.amount})" for i in items])
-    formatted_bar_chart_data.short_description = "Channel Focus (Bar Chart)"
+    # def formatted_bar_chart_data(self, obj):
+    #     items = obj.bar_chart_data.all()  # related_name in BarChartData
+    #     if not items.exists():
+    #         return "No Data"
+    #     return ", ".join([f"{i.name} ({i.percentage}% → ₹{i.amount})" for i in items])
+    # formatted_bar_chart_data.short_description = "Channel Focus (Bar Chart)"
 
 # For Pie Chart Data
     def formatted_pie_chart_entries(self, obj):
@@ -161,8 +161,8 @@ class AssessmentAdmin(admin.ModelAdmin):
 #     list_display = ('assessment', 'channel', 'percent', 'amount')
 
 
-class BarChartDataAdmin(admin.ModelAdmin):
-    list_display = ('assessment', 'name', 'percentage', 'amount')
+# class BarChartDataAdmin(admin.ModelAdmin):
+#     list_display = ('assessment', 'name', 'percentage', 'amount')
 
 
 class PieChartEntryAdmin(admin.ModelAdmin):
@@ -173,7 +173,7 @@ class PieChartEntryAdmin(admin.ModelAdmin):
 
 
 # admin.register(BudgetAllocation, BudgetAllocationAdmin)
-admin.register(BarChartData, BarChartDataAdmin)
+# admin.register(BarChartData, BarChartDataAdmin)
 admin.register(PieChartEntry,PieChartEntryAdmin)
 admin.site.register(Assessment, AssessmentAdmin)
 # admin.site.register(UserProfile)
