@@ -141,16 +141,17 @@ class Login(APIView):
 
 
 
-
 class AssessmentCreateView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         serializer = AssessmentSerializer(data=request.data, context={'request': request})
+        
         if serializer.is_valid():
+            # ✅ Save assessment only once
             assessment = serializer.save()
 
-            # ✅ Prepare email details
+            # Prepare email content
             subject = f"New Assessment Submitted: {getattr(assessment, 'business_name', 'Unknown Business')}"
             message = f"""
 A new assessment has been submitted.
@@ -168,41 +169,31 @@ Marketing Spend Band: {getattr(assessment, 'marketing_spend_band', '')}
 Exact Marketing Spend: {getattr(assessment, 'exact_marketing_spend', '')}
 Primary Goals: {getattr(assessment, 'primary_goals', '')}
 Competitor Notes: {getattr(assessment, 'competitor_notes', '')}
-
 Monthly Budget: {assessment.monthly_budget}
 Annual Budget: {assessment.annual_budget}
-# Barchart Data: {assessment.barchart_data}
 PieChart Data: {assessment.piechart_str}
-
-
 
 -----------------------------------------
 Environment: {"Development" if settings.DEBUG else "Production"}
             """
 
-
-             # ------- Extract Required Values for Brevo --------
+            # Add user to Brevo contact if email exists
             user = assessment.user
-            user_name = getattr(user, "username", "")
-            user_email = getattr(user, "email", "")
-            user_phone = getattr(user, "phone", "")
-
-            # ------- BREVO Contact add + Email Send --------
-            if user_email:
+            if user and user.email:
                 brevo_result = send_to_brevo(
-                    username=user_name,
-                    email=user_email,
-                    phone=user_phone
+                    username=user.username,
+                    email=user.email,
+                    phone=getattr(user, "phone", "")
                 )
                 print("BREVO RESULT =>", brevo_result)
-            # --------------------------------------------------
 
+            # Send email
             try:
                 send_mail(
                     subject,
                     message,
                     settings.DEFAULT_FROM_EMAIL,
-                    ["magsmenconnect@gmail.com"],  # 🔹 Change to your admin email
+                    ["magsmenconnect@gmail.com"],  # Change to your admin email
                     fail_silently=False,
                 )
             except Exception as e:
@@ -217,15 +208,10 @@ Environment: {"Development" if settings.DEBUG else "Production"}
                 'message': "Assessment created, email sent & Brevo contact added successfully.",
                 'assessment_id': assessment.id,
                 'environment': 'development' if settings.DEBUG else 'production',
-                # 'message': 'Assessment created and email sent successfully.',
             }, status=status.HTTP_201_CREATED)
 
+        # Invalid serializer
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-
 
 
 

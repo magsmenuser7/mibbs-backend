@@ -154,15 +154,31 @@ class Assessment(models.Model):
     exact_marketing_spend = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
     positioning = models.CharField(max_length=100, blank=True)
     competitor_notes = models.TextField(blank=True)
-
     industry_details = models.JSONField(null=True, blank=True)
     monthly_budget = models.FloatField(default=0, null=True, blank=True)
     annual_budget = models.FloatField(default=0, null=True, blank=True)
-
-    # budget_allocations = models.JSONField(default=list, blank=True)
-    # barchart_data = models.TextField(default=list, blank=True)
     piechart_str = models.TextField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    # budget_allocations = models.JSONField(default=list, blank=True)
+    # barchart_data = models.TextField(default=list, blank=True)
+
+
+
+class PieChartEntry(models.Model):
+    assessment = models.ForeignKey(
+        Assessment,
+        on_delete=models.CASCADE,
+        related_name="pie_chart_entries"
+    )
+    name = models.CharField(max_length=100)
+    value = models.FloatField(null=True, blank=True)  # % value
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    color = models.CharField(max_length=20, blank=True, null=True)
+
+
+
+
+
 
 
 # class BudgetAllocation(models.Model):
@@ -185,17 +201,3 @@ class Assessment(models.Model):
 #     name = models.CharField(max_length=100)
 #     percentage = models.FloatField(null=True, blank=True)
 #     amount = models.DecimalField(max_digits=12, decimal_places=2)
-
-
-
-
-class PieChartEntry(models.Model):
-    assessment = models.ForeignKey(
-        Assessment,
-        on_delete=models.CASCADE,
-        related_name="pie_chart_entries"
-    )
-    name = models.CharField(max_length=100)
-    value = models.FloatField(null=True, blank=True)  # % value
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    color = models.CharField(max_length=20, blank=True, null=True)

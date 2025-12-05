@@ -146,9 +146,6 @@ class AssessmentSerializer(serializers.ModelSerializer):
     monthlyBudget = serializers.FloatField(source='monthly_budget', required=False)
     annualBudget = serializers.FloatField(source='annual_budget', required=False)
 
-    # Nested relational fields
-    # budgetAllocations = BudgetAllocationSerializer(many=True, required=False)
-    # barchartdata = BarChartDataSerializer(many=True, required=False)
     pieChartData = PieChartEntrySerializer(many=True, required=False)  # Added for pie chart
 
     class Meta:
@@ -174,9 +171,7 @@ class AssessmentSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = None
 
-        # Extract nested fields
-        # budget_allocations_data = validated_data.pop('budgetAllocations', [])
-        # bar_chart_data = validated_data.pop('barchartdata', [])
+        # Extract nested PieChartEntries
         piechart_data = validated_data.pop('pieChartData', [])
 
         # Attach user if available
@@ -189,26 +184,17 @@ class AssessmentSerializer(serializers.ModelSerializer):
 
         if user:
             validated_data['user'] = user
-            validated_data['username'] = user.username
-            validated_data['email'] = user.email
-            validated_data['phone'] = getattr(user, 'phone', '')
+            # Removed manual assignment of username, email, phone to prevent double save
 
-        # Create Assessment
+        # Create Assessment only once
         assessment = Assessment.objects.create(**validated_data)
-
-        # # Nested BudgetAllocations
-        # for ba in budget_allocations_data:
-        #     BudgetAllocation.objects.create(assessment=assessment, **ba)
-
-        # Nested ChannelFocuses
-        # for cf in bar_chart_data:
-        #     BarChartData.objects.create(assessment=assessment, **cf)
 
         # Nested PieChartEntries
         for pc in piechart_data:
             PieChartEntry.objects.create(assessment=assessment, **pc)
 
         return assessment
+
 
 
 # class AssessmentSerializer(serializers.ModelSerializer):

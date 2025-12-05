@@ -15,13 +15,18 @@ import os
 from pathlib import Path
 
 
-load_dotenv()
-BREVO_API_KEY = os.getenv("BREVO_API_KEY")
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 # TEMPLATES_DIRS = os.path.join(BASE_DIR,'templates')
 STATIC_DIRS = os.path.join(BASE_DIR,'static')
+
+
+load_dotenv(os.path.join(BASE_DIR, '.env'))  # take environment variables from .env.
+
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+
+
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -98,14 +103,14 @@ REST_FRAMEWORK = {
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    # "http://localhost:8080",
-    "https://mibbs.ai"
+    "http://localhost:8080",
+    # "https://mibbs.ai"
 ]
 
 
 CSRF_TRUSTED_ORIGINS = [
-    # "http://localhost:8080",
-    "https://mibbs.ai"
+    "http://localhost:8080",
+    # "https://mibbs.ai"
 ]
 
 
