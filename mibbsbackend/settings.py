@@ -15,17 +15,22 @@ import os
 from pathlib import Path
 
 
+# load_dotenv()
+# BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+
+
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 # TEMPLATES_DIRS = os.path.join(BASE_DIR,'templates')
 STATIC_DIRS = os.path.join(BASE_DIR,'static')
 
+# Load .env from BASE_DIR
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-load_dotenv(os.path.join(BASE_DIR, '.env'))  # take environment variables from .env.
-
+# Now you can safely get your BREVO_API_KEY
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
-
-
 
 
 # Quick-start development settings - unsuitable for production
@@ -103,14 +108,14 @@ REST_FRAMEWORK = {
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8080",
-    # "https://mibbs.ai"
+    # "http://localhost:8080",
+    "https://mibbs.ai"
 ]
 
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8080",
-    # "https://mibbs.ai"
+    # "http://localhost:8080",
+    "https://mibbs.ai"
 ]
 
 
@@ -197,7 +202,6 @@ UPLOAD_ROOT = os.path.join(BASE_DIR,'upload')
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
