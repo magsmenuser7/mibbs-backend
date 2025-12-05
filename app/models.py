@@ -162,6 +162,9 @@ class Assessment(models.Model):
     # budget_allocations = models.JSONField(default=list, blank=True)
     # barchart_data = models.TextField(default=list, blank=True)
 
+    def __str__(self):
+        return f"Assessment by {self.user.username if self.user else 'Guest'} - {self.business_name}"
+
 
 
 class PieChartEntry(models.Model):
@@ -174,6 +177,9 @@ class PieChartEntry(models.Model):
     value = models.FloatField(null=True, blank=True)  # % value
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     color = models.CharField(max_length=20, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.value}%"
 
 
 

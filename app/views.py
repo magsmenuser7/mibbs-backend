@@ -171,7 +171,6 @@ Competitor Notes: {getattr(assessment, 'competitor_notes', '')}
 
 Monthly Budget: {assessment.monthly_budget}
 Annual Budget: {assessment.annual_budget}
-# Barchart Data: {assessment.barchart_data}
 PieChart Data: {assessment.piechart_str}
 
 
