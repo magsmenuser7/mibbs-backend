@@ -83,16 +83,8 @@ def export_assessments_excel(modeladmin, request, queryset):
             str(a.annual_budget) if a.annual_budget is not None else '',
             # json.dumps(a.budget_allocations, ensure_ascii=False) if a.budget_allocations else '',
             # json.dumps(a.barchart_data, ensure_ascii=False) if a.barchart_data else '',
-            json.dumps([
-    {
-        "name": item["name"],
-        "value": float(item["value"]) if item["value"] is not None else None,
-        "amount": float(item["amount"]) if item["amount"] is not None else None,
-        "color": item["color"],
-    }
-    for item in a.pie_chart_entries.all().values('name', 'value', 'amount', 'color')
-        ], ensure_ascii=False) if hasattr(a, "pie_chart_entries") else '',
-    a.created_at.isoformat(),
+            json.dumps(list(a.pie_chart_entries.all().values('name', 'value', 'amount', 'color')), ensure_ascii=False) if hasattr(a, "pie_chart_entries") else '',
+            a.created_at.isoformat(),
     ])
 
     # Return Excel File
