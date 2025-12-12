@@ -162,8 +162,8 @@ class Assessment(models.Model):
     # budget_allocations = models.JSONField(default=list, blank=True)
     # barchart_data = models.TextField(default=list, blank=True)
 
-    def __str__(self):
-        return f"Assessment by {self.user.username if self.user else 'Guest'} - {self.business_name}"
+    # def __str__(self):
+    #     return f"Assessment by {self.user.username if self.user else 'Guest'} - {self.business_name}"
 
 
 
