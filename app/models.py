@@ -222,7 +222,7 @@ class Assessment(models.Model):
     industry_details = models.JSONField(null=True, blank=True)
     monthly_budget = models.IntegerField(default=0, null=True, blank=True)
     annual_budget = models.IntegerField(default=0, null=True, blank=True)
-    piechart_str = models.CharField(default=list, blank=True)
+    piechart_str = models.CharField(max_length=5000, default=list, blank=True,null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     # budget_allocations = models.JSONField(default=list, blank=True)
     # barchart_data = models.TextField(default=list, blank=True)
