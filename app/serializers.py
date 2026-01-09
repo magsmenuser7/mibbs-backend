@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Users, Role, UserRole, Assessment,PieChartEntry
+from .models import Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
@@ -58,15 +58,6 @@ class LoginSerializer(serializers.Serializer):
 
 
 
-# class LoginSerializer(serializers.Serializer):
-#     email = serializers.EmailField()
-#     phone = serializers.CharField(required=False, allow_blank=True)
-#     password = serializers.CharField(write_only=True)
-
-
-
-
-
 
 
 
@@ -94,8 +85,6 @@ class RegisterSerializer(serializers.Serializer):
         validated_data.pop('confirm_password')
         user = Users.objects.create(**validated_data)
         return user
-    
-
 
 
 class LoginSerializer(serializers.Serializer):
@@ -104,15 +93,79 @@ class LoginSerializer(serializers.Serializer):
 
 
 
-# class BudgetAllocationSerializer(serializers.Serializer):
-#     channel = serializers.CharField()
-#     percent = serializers.FloatField(required=False)
-#     amount = serializers.FloatField(required=False)
 
-# class BarChartDataSerializer(serializers.Serializer):
-#     name = serializers.CharField()
-#     percentage = serializers.FloatField()
-#     amount = serializers.FloatField(required=False)
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class VerifyOtpSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)
+
+class ResetPasswordSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    new_password = serializers.CharField(min_length=6)
+    confirm_password = serializers.CharField(min_length=6)
+
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+        return data
+    
+    
+    
+# Mobile Otp functionality  
+class LoginOtpSendSerializer(serializers.Serializer):
+    mobile = serializers.CharField(max_length=20)
+
+
+class LoginOtpVerifySerializer(serializers.Serializer):
+    mobile = serializers.CharField(max_length=20)
+    otp = serializers.CharField(max_length=6)
+
+
+
+
+# # ✅ NEW: Forgot Password Serializer
+# class ForgotPasswordSerializer(serializers.Serializer):
+#     email = serializers.EmailField()
+
+#     def validate_email(self, value):
+#         """Check if email exists in database"""
+#         if not Users.objects.filter(email=value).exists():
+#             raise serializers.ValidationError("No user found with this email address.")
+#         return value
+
+
+# # ✅ NEW: Reset Password Serializer
+# class ResetPasswordSerializer(serializers.Serializer):
+#     token = serializers.CharField(max_length=100)
+#     new_password = serializers.CharField(write_only=True, min_length=6)
+#     confirm_password = serializers.CharField(write_only=True, min_length=6)
+
+#     def validate(self, data):
+#         """Validate that passwords match"""
+#         if data['new_password'] != data['confirm_password']:
+#             raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+#         return data
+
+#     def validate_token(self, value):
+#         """Validate that the reset token exists and is valid"""
+#         try:
+#             user = Users.objects.get(reset_token=value)
+#             if not user.is_reset_token_valid():
+#                 raise serializers.ValidationError("Reset token has expired. Please request a new one.")
+#         except Users.DoesNotExist:
+#             raise serializers.ValidationError("Invalid reset token.")
+#         return value
+    
+
+
+
+
+
+
+
+
 
 class PieChartEntrySerializer(serializers.Serializer):
     name = serializers.CharField()
@@ -134,6 +187,7 @@ class AssessmentSerializer(serializers.ModelSerializer):
     state = serializers.CharField(required=False, allow_blank=True)
     industry = serializers.CharField(required=False, allow_blank=True)
     yearsInBusiness = serializers.IntegerField(source='years_in_business', required=False, allow_null=True)
+    monthsInBusiness = serializers.IntegerField(source='months_in_business', required=False, allow_null=True)
     digitalMaturity = serializers.CharField(source='digital_maturity', required=False, allow_blank=True)
     primaryGoals = serializers.JSONField(source='primary_goals', required=False, allow_null=True)
     monthlyRevenue = serializers.DecimalField(source='monthly_revenue', max_digits=20, decimal_places=2, required=False, allow_null=True)
@@ -156,7 +210,7 @@ class AssessmentSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'phone',
             'businessName', 'brandStage', 'pincode', 'city', 'state', 'industry',
-            'yearsInBusiness', 'digitalMaturity', 'primaryGoals',
+            'yearsInBusiness', 'monthsInBusiness', 'digitalMaturity', 'primaryGoals',
             'monthlyRevenue', 'marketingSpendBand', 'exactMarketingSpend',
             'positioning', 'competitorNotes', 'industryDetails',
             'monthlyBudget', 'annualBudget', 'pieChartData',
@@ -211,69 +265,30 @@ class AssessmentSerializer(serializers.ModelSerializer):
         return assessment
 
 
-# class AssessmentSerializer(serializers.ModelSerializer):
-#     # Include user info (read-only)
-#     username = serializers.CharField(source='user.username', read_only=True)
-#     email = serializers.EmailField(source='user.email', read_only=True)
-#     phone = serializers.CharField(source='user.phone', read_only=True)
 
-#     # Map frontend camelCase keys to backend model fields
-#     businessName = serializers.CharField(source='business_name', required=False, allow_blank=True)
-#     brandStage = serializers.CharField(source='brand_stage', required=False, allow_blank=True)
-#     pincode = serializers.CharField(required=False, allow_blank=True)
-#     city = serializers.CharField(required=False, allow_blank=True)
-#     state = serializers.CharField(required=False, allow_blank=True)
-#     industry = serializers.CharField(required=False, allow_blank=True)
-#     yearsInBusiness = serializers.IntegerField(source='years_in_business', required=False, allow_null=True)
-#     digitalMaturity = serializers.CharField(source='digital_maturity', required=False, allow_blank=True)
-#     primaryGoals = serializers.JSONField(source='primary_goals', required=False, allow_null=True)
-#     monthlyRevenue = serializers.DecimalField(source='monthly_revenue', max_digits=20, decimal_places=2, required=False, allow_null=True)
-#     marketingSpendBand = serializers.CharField(source='marketing_spend_band', required=False, allow_blank=True)
-#     exactMarketingSpend = serializers.DecimalField(source='exact_marketing_spend', max_digits=20, decimal_places=2, required=False, allow_null=True)
-#     positioning = serializers.CharField(required=False, allow_blank=True)
-#     competitorNotes = serializers.CharField(source='competitor_notes', required=False, allow_blank=True)
-#     industryDetails = serializers.JSONField(source='industry_details', required=False, allow_null=True)
-#     monthlyBudget = serializers.DecimalField(source='monthly_budget', max_digits=12, decimal_places=2, required=False, allow_null=True)
-#     annualBudget = serializers.DecimalField(source='annual_budget', max_digits=12, decimal_places=2, required=False, allow_null=True)
-#     budgetAllocations = serializers.JSONField(source='budget_allocations', required=False, allow_null=True)
-#     channelFocuses = serializers.JSONField(source='channel_focuses', required=False, allow_null=True)
+class IntalksStatsSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
 
-#     class Meta:
-#         model = Assessment
-#         fields = [
-#             'id',
-#             'username', 'email', 'phone',  # linked user info
-#             'businessName', 'brandStage', 'pincode', 'city', 'state', 'industry',
-#             'yearsInBusiness', 'digitalMaturity', 'primaryGoals',
-#             'monthlyRevenue', 'marketingSpendBand', 'exactMarketingSpend',
-#             'positioning', 'competitorNotes', 'industryDetails','monthlyBudget','annualBudget','budgetAllocations','channelFocuses',
-#             'created_at'
-#         ]
-#         read_only_fields = ['id', 'created_at', 'username', 'email', 'phone']
+    class Meta:
+        model = Intaklksstatspupdate
+        fields = [
+            "youtubestats",
+            "instagramstats",
+            "communitygrowthstats",
+            "image",
+            "title",
+            "description",
+            "category",
+            "guestname",
+            "podcasttime",
+            "podcastdate",
+            "podcastnumber",
+            "podcastviews",
+            "youtubelink",
+        ]
 
-#     def validate_primary_goals(self, value):
-#         """Allow up to 4 primary goals"""
-#         if isinstance(value, list) and len(value) > 4:
-#             raise serializers.ValidationError("You can select up to 4 primary goals.")
-#         return value
-
-#     def create(self, validated_data):
-#         request = self.context.get('request')
-#         user = None
-
-#         if request and hasattr(request, 'user') and request.user.is_authenticated:
-#             user = request.user
-#         else:
-#             email = request.data.get('email')
-#         if email:
-#             user = Users.objects.filter(email=email).first()
-
-#     # Set user-related fields in assessment table
-#         if user:
-#             validated_data['user'] = user
-#             validated_data['username'] = user.username
-#             validated_data['email'] = user.email
-#             validated_data['phone'] = getattr(user, 'phone', '')
-
-#         assessment = Assessment.objects.create(**validated_data)
-#         return assessment
+    def get_image(self, obj):
+        request = self.context.get("request")
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None

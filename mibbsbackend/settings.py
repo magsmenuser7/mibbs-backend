@@ -109,13 +109,17 @@ REST_FRAMEWORK = {
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     # "http://localhost:8080",
-    "https://mibbs.ai"
+    # "http://localhost:5173",
+    "https://mibbs.ai",
+    "https://intalks.in"
 ]
 
 
 CSRF_TRUSTED_ORIGINS = [
     # "http://localhost:8080",
-    "https://mibbs.ai"
+    # "http://localhost:5173",
+    "https://mibbs.ai",
+    "https://intalks.in"
 ]
 
 
@@ -213,3 +217,11 @@ EMAIL_HOST_PASSWORD = 'lhln yivw ywva ewiy'         # Gmail App Password (not yo
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # lhln yivw ywva ewiy app password
+
+
+
+# Change 'UTC' to your specific region
+TIME_ZONE = 'Asia/Kolkata'  
+
+# Keep this True to handle daylight savings and standard practices
+USE_TZ = True
