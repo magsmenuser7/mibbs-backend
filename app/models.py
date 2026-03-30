@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, User
 from simple_history.models import HistoricalRecords
 from django.conf import settings
 import secrets
@@ -273,3 +273,106 @@ class Intaklksstatspupdate(models.Model):
         return self.youtubestats or "No YouTube Stats"
 
 
+
+
+
+
+class NewBusinessQuestionnaire(models.Model):
+
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, null=True, blank=True)
+
+    username = models.CharField(max_length=100, blank=True, null=True)
+    email = models.EmailField(max_length=100, blank=True, null=True)
+    phone = models.CharField(max_length=10, blank=True, null=True)
+
+    business_name = models.CharField(max_length=200)
+    business_stage = models.CharField(max_length=50)
+
+    has_website = models.BooleanField(default=False)
+    website_url = models.URLField(blank=True, null=True)
+
+
+    pincode = models.CharField(max_length=10)
+    locality = models.CharField(max_length=100)
+    district = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    country = models.CharField(max_length=100)
+
+    industry = models.CharField(max_length=100)
+
+    business_type = models.CharField(max_length=50)
+    product_business_type = models.CharField(max_length=50, blank=True, null=True)
+
+    starting_budget = models.CharField(max_length=100)
+
+    business_mode = models.JSONField(default=list)
+    help_needed = models.JSONField(default=list)
+
+    monthly_budget = models.IntegerField(default=0)
+    annual_budget = models.IntegerField(default=0)
+
+    pie_chart_data = models.JSONField(default=list, blank=True)
+    channel_focuses = models.JSONField(default=list, blank=True)
+    budget_allocations = models.JSONField(default=list, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.business_name
+    
+
+
+
+class ExistingBusinessQuestionnaire(models.Model):
+
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, null=True, blank=True)
+
+    username = models.CharField(max_length=100, blank=True, null=True)
+    email = models.EmailField(max_length=100, blank=True, null=True)
+    phone = models.CharField(max_length=10, blank=True, null=True)
+
+    business_name = models.CharField(max_length=200)
+    business_stage = models.CharField(max_length=50)
+
+    has_website = models.BooleanField(default=False)
+    website_url = models.URLField(blank=True, null=True)
+
+
+    pincode = models.CharField(max_length=10)
+    locality = models.CharField(max_length=100)
+    district = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    country = models.CharField(max_length=100)
+
+    industry = models.CharField(max_length=100)
+
+    business_type = models.CharField(max_length=50)
+    product_business_type = models.CharField(max_length=50, blank=True, null=True)
+
+    years_in_business = models.CharField(max_length=100)
+
+    business_challenges = models.JSONField(default=list)
+
+    digital_scaling_level = models.CharField(max_length=100)
+
+    digital_platforms = models.JSONField(default=list)
+    digital_activities = models.JSONField(default=list)
+
+    roi_percentage = models.CharField(max_length=20, blank=True, null=True)
+
+    monthly_revenue = models.CharField(max_length=100)
+    marketing_budget_range = models.CharField(max_length=100)
+
+    brand_objectives = models.JSONField(default=list)
+
+    monthly_budget = models.IntegerField(default=0)
+    annual_budget = models.IntegerField(default=0)
+
+    pie_chart_data = models.JSONField(default=list, blank=True)
+    channel_focuses = models.JSONField(default=list, blank=True)
+    budget_allocations = models.JSONField(default=list, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.business_name

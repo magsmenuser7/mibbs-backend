@@ -7,7 +7,7 @@ from rest_framework import status
 from django.contrib.auth import authenticate,login
 from django.contrib.auth import login as django_login
 from urllib3 import request
-from .serializers import RegisterSerializer,LoginSerializer,UserSerializer,ForgotPasswordSerializer,ResetPasswordSerializer,AssessmentSerializer,Intaklksstatspupdate,IntalksStatsSerializer
+from .serializers import RegisterSerializer,LoginSerializer,UserSerializer,ForgotPasswordSerializer,ResetPasswordSerializer,AssessmentSerializer,Intaklksstatspupdate,IntalksStatsSerializer,NewBusinessSerializer, ExistingBusinessSerializer
 from .models import Intaklksstatspupdate, Users
 from django.contrib.auth import logout
 from rest_framework.views import APIView
@@ -27,7 +27,39 @@ from .serializers import ForgotPasswordSerializer,VerifyOtpSerializer,ResetPassw
 from django.utils import timezone  # <--- Added this
 from datetime import timedelta     # <--- Required for expiry logic
 from django.db.models import Max
+from rest_framework.decorators import api_view
 
+
+
+
+@api_view(["POST"])
+def save_questionnaire(request):
+
+    path = request.data.get("business_path")
+
+    print("REQUEST DATA:", request.data)
+
+    if path == "NEW":
+
+        serializer = NewBusinessSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "New Business Saved Successfully"})
+
+        return Response(serializer.errors)
+
+    elif path == "EXISTING":
+
+        serializer = ExistingBusinessSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Existing Business Saved Successfully"})
+
+        return Response(serializer.errors)
+
+    return Response({"error": "Invalid business path"})
 
 
 
@@ -549,6 +581,23 @@ class AllGuests(APIView):
             })
 
         return Response({"success": True, "data": data})
+
+def api_view(http_method_names):
+    raise NotImplementedError
+
+class api_view:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError
+
+def api_view(http_method_names):
+    raise NotImplementedError
+
+
+
+
 
 
 

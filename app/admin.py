@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate
+from .models import Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate,NewBusinessQuestionnaire,ExistingBusinessQuestionnaire
 from simple_history.admin import SimpleHistoryAdmin
 import csv, json
 from django.http import HttpResponse
@@ -134,6 +134,8 @@ class AssessmentAdmin(admin.ModelAdmin):
 
 
 
+
+
 # For Pie Chart Data
     def formatted_pie_chart_entries(self, obj):
         items = obj.pie_chart_entries.all()  # related_name in PieChartEntry
@@ -155,11 +157,252 @@ class IntaklksstatspupdateAdmin(admin.ModelAdmin):
 
 
 
+from django.contrib import admin
+from .models import NewBusinessQuestionnaire, ExistingBusinessQuestionnaire
+
+
+# ================================
+# NEW BUSINESS ADMIN
+# ================================
+
+
+class NewBusinessQuestionnaireAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "id",
+        "username",
+        "email",
+        "phone",
+        "business_name",
+        "industry",
+        "business_type",
+        "starting_budget",
+        "monthly_budget",
+        "annual_budget",
+        "created_at"
+    )
+
+    search_fields = (
+        "username",
+        "email",
+        "phone",
+        "business_name",
+        "industry",
+    )
+
+    list_filter = (
+        "industry",
+        "business_type",
+        "created_at",
+    )
+
+    readonly_fields = (
+        "monthly_budget",
+        "annual_budget",
+        "pie_chart_data",
+        "channel_focuses",
+        "budget_allocations",
+        "created_at",
+    )
+
+    fieldsets = (
+
+        ("User Information", {
+            "fields": (
+                "user",
+                "username",
+                "email",
+                "phone",
+            )
+        }),
+
+        ("Business Information", {
+            "fields": (
+                "business_name",
+                "business_stage",
+                "industry",
+                "business_type",
+                "product_business_type",
+            )
+        }),
+
+        ("Website Information", {
+            "fields": (
+                "has_website",
+                "website_url",
+            )
+        }),
+
+        ("Location Details", {
+            "fields": (
+                "pincode",
+                "locality",
+                "district",
+                "state",
+                "country",
+            )
+        }),
+
+        ("New Business Details", {
+            "fields": (
+                "starting_budget",
+                "business_mode",
+                "help_needed",
+            )
+        }),
+
+        ("Budget Report", {
+            "fields": (
+                "monthly_budget",
+                "annual_budget",
+                "pie_chart_data",
+                "channel_focuses",
+                "budget_allocations",
+            )
+        }),
+
+        ("System Info", {
+            "fields": (
+                "created_at",
+            )
+        }),
+    )
+
+
+# ================================
+# EXISTING BUSINESS ADMIN
+# ================================
+
+
+class ExistingBusinessQuestionnaireAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "id",
+        "username",
+        "email",
+        "phone",
+        "business_name",
+        "industry",
+        "years_in_business",
+        "monthly_revenue",
+        "marketing_budget_range",
+        "monthly_budget",
+        "annual_budget",
+        "created_at"
+    )
+
+    search_fields = (
+        "username",
+        "email",
+        "phone",
+        "business_name",
+        "industry",
+    )
+
+    list_filter = (
+        "industry",
+        "digital_scaling_level",
+        "created_at",
+    )
+
+    readonly_fields = (
+        "monthly_budget",
+        "annual_budget",
+        "pie_chart_data",
+        "channel_focuses",
+        "budget_allocations",
+        "created_at",
+    )
+
+    fieldsets = (
+
+        ("User Information", {
+            "fields": (
+                "user",
+                "username",
+                "email",
+                "phone",
+            )
+        }),
+
+        ("Business Information", {
+            "fields": (
+                "business_name",
+                "business_stage",
+                "industry",
+                "business_type",
+                "product_business_type",
+            )
+        }),
+
+        ("Website Information", {
+            "fields": (
+                "has_website",
+                "website_url",
+            )
+        }),
+
+        ("Location Details", {
+            "fields": (
+                "pincode",
+                "locality",
+                "district",
+                "state",
+                "country",
+            )
+        }),
+
+        ("Experience", {
+            "fields": (
+                "years_in_business",
+                "business_challenges",
+            )
+        }),
+
+        ("Digital Presence", {
+            "fields": (
+                "digital_scaling_level",
+                "digital_platforms",
+                "digital_activities",
+                "roi_percentage",
+            )
+        }),
+
+        ("Revenue & Marketing", {
+            "fields": (
+                "monthly_revenue",
+                "marketing_budget_range",
+                "brand_objectives",
+            )
+        }),
+
+        ("Budget Report", {
+            "fields": (
+                "monthly_budget",
+                "annual_budget",
+                "pie_chart_data",
+                "channel_focuses",
+                "budget_allocations",
+            )
+        }),
+
+        ("System Info", {
+            "fields": (
+                "created_at",
+            )
+        }),
+    )
+
+
+
+
+
 
 admin.register(PieChartEntry,PieChartEntryAdmin)
 admin.site.register(Assessment, AssessmentAdmin)
 admin.site.register(Intaklksstatspupdate, IntaklksstatspupdateAdmin)
-
+admin.site.register(NewBusinessQuestionnaire)
+admin.site.register(ExistingBusinessQuestionnaire)
 
 
 

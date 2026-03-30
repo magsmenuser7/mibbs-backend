@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate
+from .models import Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate,NewBusinessQuestionnaire,ExistingBusinessQuestionnaire
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
@@ -292,3 +292,44 @@ class IntalksStatsSerializer(serializers.ModelSerializer):
         if obj.image and request:
             return request.build_absolute_uri(obj.image.url)
         return None
+    
+
+
+
+class NewBusinessSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = NewBusinessQuestionnaire
+        fields = "__all__"
+
+    def create(self, validated_data):
+
+        user = validated_data.get("user")
+
+        if user:
+            validated_data["username"] = user.username
+            validated_data["email"] = user.email
+            validated_data["phone"] = user.phone
+
+        return super().create(validated_data)
+
+
+class ExistingBusinessSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ExistingBusinessQuestionnaire
+        fields = "__all__"
+
+    def create(self, validated_data):
+
+        user = validated_data.get("user")
+
+        if user:
+            validated_data["username"] = user.username
+            validated_data["email"] = user.email
+            validated_data["phone"] = user.phone
+
+        return super().create(validated_data)
+
+
+
