@@ -28,7 +28,7 @@ from django.utils import timezone  # <--- Added this
 from datetime import timedelta     # <--- Required for expiry logic
 from django.db.models import Max
 from rest_framework.decorators import api_view
-
+import requests
 
 
 
@@ -599,6 +599,32 @@ def api_view(http_method_names):
 
 
 
+def youtube_stats(request):
 
+    api_key = settings.YOUTUBE_API_KEY
+    channel_id = settings.YOUTUBE_CHANNEL_ID
 
+    url = f"https://www.googleapis.com/youtube/v3/channels?part=statistics&id={channel_id}&key={api_key}"
 
+    try:
+        response = requests.get(url, timeout=10)
+        data = response.json()
+
+        if "items" not in data or len(data["items"]) == 0:
+            return JsonResponse({
+                "error": "Invalid response from YouTube API",
+                "response": data
+            }, status=500)
+
+        stats = data["items"][0]["statistics"]
+
+        return JsonResponse({
+            "youtube_views": int(stats.get("viewCount", 0)),
+            "subscribers": int(stats.get("subscriberCount", 0)),
+            "videos": int(stats.get("videoCount", 0))
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            "error": str(e)
+        }, status=500)

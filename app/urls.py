@@ -1,7 +1,7 @@
 # accounts/urls.py
 from django.urls import path
 from .views import AllGuests, HomeEpisodes, RegisterView, LoginView,logout_view,google_login,Register,Login,AssessmentCreateView,\
-ForgotPasswordView, VerifyOtpView, ResetPasswordView,LoginOtpSendView,LoginOtpVerifyView,IntalksStatsGet,AllEpisodes, save_questionnaire
+ForgotPasswordView, VerifyOtpView, ResetPasswordView,LoginOtpSendView,LoginOtpVerifyView,IntalksStatsGet,AllEpisodes,youtube_stats,save_questionnaire, youtube_stats
 
 urlpatterns = [
     path('registerUser', RegisterView.as_view(), name='register'),
@@ -21,6 +21,7 @@ urlpatterns = [
     path('episodes/', AllEpisodes.as_view(), name="episodes"),
     path('guests/', AllGuests.as_view(),name='guests'),
     path("questionnaire/", save_questionnaire, name="questionnaire"),
+    path("youtube-stats/", youtube_stats, name="youtube-stats"),
     # path('forgot-password/', ForgotPassword.as_view(), name='forgot-password'),  # ✅ NEW
     # path('reset-password/', ResetPassword.as_view(), name='reset-password'),      # ✅ NEW
     

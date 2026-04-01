@@ -19,6 +19,12 @@ from pathlib import Path
 # BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 
 
+# load_dotenv()
+
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+YOUTUBE_CHANNEL_ID = os.getenv("YOUTUBE_CHANNEL_ID")
+
+
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
