@@ -19,14 +19,6 @@ from pathlib import Path
 # BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 
 
-# load_dotenv()
-
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
-YOUTUBE_CHANNEL_ID = os.getenv("YOUTUBE_CHANNEL_ID")
-
-
-
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 # TEMPLATES_DIRS = os.path.join(BASE_DIR,'templates')
@@ -37,6 +29,10 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # Now you can safely get your BREVO_API_KEY
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+
+YOUTUBE_CHANNEL_ID = os.getenv("YOUTUBE_CHANNEL_ID")
 
 
 # Quick-start development settings - unsuitable for production
