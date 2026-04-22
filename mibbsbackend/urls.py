@@ -24,3 +24,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('app.urls')),  # Include the app's URLs for registration
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)+static(settings.UPLOAD_URL, document_root=settings.UPLOAD_ROOT)
+
+
+# Serve MEDIA files (VERY IMPORTANT)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

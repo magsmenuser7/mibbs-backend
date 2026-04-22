@@ -376,3 +376,99 @@ class ExistingBusinessQuestionnaire(models.Model):
 
     def __str__(self):
         return self.business_name
+
+
+
+
+
+
+
+# Employee Onboarding Model
+
+class EmployeeOnboarding(models.Model):
+
+    # STEP 1 — BASIC DETAILS
+    first_name = models.CharField(max_length=200)
+    last_name = models.CharField(max_length=200)
+
+    email = models.EmailField()
+    mobile = models.CharField(max_length=20)
+
+    doj = models.DateField()
+    role = models.CharField(max_length=200)
+    division = models.CharField(max_length=200)
+    office = models.CharField(max_length=200)
+
+    self_intro = models.TextField()
+    linkedin = models.URLField(blank=True,null=True)
+
+    # STEP 2 — PERSONAL DETAILS
+    father_name = models.CharField(max_length=200)
+    dob = models.DateField()
+
+    address = models.TextField()
+
+    emerg_name = models.CharField(max_length=200)
+    emerg_phone = models.CharField(max_length=20)
+
+    blood_group = models.CharField(max_length=10,blank=True,null=True)
+
+    qualification = models.CharField(max_length=200)
+
+    # BANK DETAILS
+    acc_name = models.CharField(max_length=200)
+    bank_name = models.CharField(max_length=200)
+    acc_no = models.CharField(max_length=100)
+    ifsc = models.CharField(max_length=20)
+    branch = models.CharField(max_length=200,blank=True,null=True)
+
+    # REFERENCES
+    ref1_name = models.CharField(max_length=200)
+    ref1_desg = models.CharField(max_length=200)
+    ref1_org = models.CharField(max_length=200)
+    ref1_contact = models.CharField(max_length=200)
+
+    ref2_name = models.CharField(max_length=200)
+    ref2_desg = models.CharField(max_length=200)
+    ref2_org = models.CharField(max_length=200)
+    ref2_contact = models.CharField(max_length=200)
+
+    # STEP 3 — DOCUMENTS
+    aadhaar_card = models.FileField(upload_to='documents/aadhaar/')
+    pan_card = models.FileField(upload_to='documents/pan/')
+    photo = models.ImageField(upload_to='documents/photo/')
+
+    tenth_certificate = models.FileField(upload_to='documents/10th/')
+    inter_certificate = models.FileField(upload_to='documents/12th/')
+    degree_certificate = models.FileField(upload_to='documents/degree/')
+
+    college_id = models.FileField(upload_to='documents/college_id/',blank=True,null=True)
+    noc_letter = models.FileField(upload_to='documents/noc/',blank=True,null=True)
+
+    relieving_letter = models.FileField(
+        upload_to='documents/relieving/',
+        blank=True,
+        null=True
+    )
+
+    salary_proof = models.FileField(
+        upload_to='documents/salary/',
+        blank=True,
+        null=True
+    )
+
+    # STEP 4 & 5
+    offer_accepted = models.BooleanField(default=False)
+    nda_accepted = models.BooleanField(default=False)
+
+    # STEP 6
+    handbook_sections = models.TextField(blank=True)
+
+    # STEP 7
+    signature = models.CharField(max_length=200)
+    sign_date = models.CharField(max_length=200)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"

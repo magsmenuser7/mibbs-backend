@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate,login
 from django.contrib.auth import login as django_login
 from urllib3 import request
 from .serializers import RegisterSerializer,LoginSerializer,UserSerializer,ForgotPasswordSerializer,ResetPasswordSerializer,AssessmentSerializer,Intaklksstatspupdate,IntalksStatsSerializer,NewBusinessSerializer, ExistingBusinessSerializer
-from .models import Intaklksstatspupdate, Users
+from .models import Intaklksstatspupdate, Users, EmployeeOnboarding
 from django.contrib.auth import logout
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -20,7 +20,7 @@ from rest_framework import status, permissions
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMultiAlternatives
 from .brevo_utility import send_to_brevo,send_password_reset_email
 from dotenv import load_dotenv
 from .serializers import ForgotPasswordSerializer,VerifyOtpSerializer,ResetPasswordSerializer,LoginOtpSendSerializer,LoginOtpVerifySerializer
@@ -29,6 +29,180 @@ from datetime import timedelta     # <--- Required for expiry logic
 from django.db.models import Max
 from rest_framework.decorators import api_view
 import requests
+from django.views.decorators.csrf import csrf_exempt
+
+
+
+
+@csrf_exempt
+def submit_onboarding(request):
+
+    if request.method == "POST":
+
+        employee = EmployeeOnboarding.objects.create(
+
+            first_name=request.POST.get("firstName"),
+            last_name=request.POST.get("lastName"),
+
+            email=request.POST.get("email"),
+            mobile=request.POST.get("mobile"),
+
+            doj=request.POST.get("doj"),
+            role=request.POST.get("role"),
+            division=request.POST.get("division"),
+            office=request.POST.get("office"),
+
+            self_intro=request.POST.get("selfIntro"),
+            linkedin=request.POST.get("linkedin"),
+
+            father_name=request.POST.get("fatherName"),
+            dob=request.POST.get("dob"),
+            address=request.POST.get("address"),
+
+            emerg_name=request.POST.get("emergName"),
+            emerg_phone=request.POST.get("emergPhone"),
+
+            blood_group=request.POST.get("bloodGroup"),
+            qualification=request.POST.get("qual"),
+
+            acc_name=request.POST.get("accName"),
+            bank_name=request.POST.get("bankName"),
+            acc_no=request.POST.get("accNo"),
+            ifsc=request.POST.get("ifsc"),
+            branch=request.POST.get("branch"),
+
+            ref1_name=request.POST.get("ref1Name"),
+            ref1_desg=request.POST.get("ref1Desg"),
+            ref1_org=request.POST.get("ref1Org"),
+            ref1_contact=request.POST.get("ref1Contact"),
+
+            ref2_name=request.POST.get("ref2Name"),
+            ref2_desg=request.POST.get("ref2Desg"),
+            ref2_org=request.POST.get("ref2Org"),
+            ref2_contact=request.POST.get("ref2Contact"),
+
+            aadhaar_card=request.FILES.get("aadhaar"),
+            pan_card=request.FILES.get("pan"),
+            photo=request.FILES.get("photo"),
+
+            tenth_certificate=request.FILES.get("tenth"),
+            inter_certificate=request.FILES.get("twelfth"),
+            degree_certificate=request.FILES.get("degree"),
+
+            college_id=request.FILES.get("collegeid"),
+            noc_letter=request.FILES.get("noc"),
+            relieving_letter=request.FILES.get("relieving"),
+            salary_proof=request.FILES.get("salary"),
+
+            offer_accepted=request.POST.get("offerCb") == "true",
+            nda_accepted=request.POST.get("ndaCb") == "true",
+
+            handbook_sections=request.POST.get("hb_sections"),
+
+            signature=request.POST.get("signature"),
+            sign_date=request.POST.get("signDate"),
+        )
+
+        # Document URLs
+        aadhaar = request.build_absolute_uri(employee.aadhaar_card.url) if employee.aadhaar_card else ""
+        pan = request.build_absolute_uri(employee.pan_card.url) if employee.pan_card else ""
+        photo = request.build_absolute_uri(employee.photo.url) if employee.photo else ""
+        tenth = request.build_absolute_uri(employee.tenth_certificate.url) if employee.tenth_certificate else ""
+        inter = request.build_absolute_uri(employee.inter_certificate.url) if employee.inter_certificate else ""
+        degree = request.build_absolute_uri(employee.degree_certificate.url) if employee.degree_certificate else ""
+        college = request.build_absolute_uri(employee.college_id.url) if employee.college_id else ""
+        noc = request.build_absolute_uri(employee.noc_letter.url) if employee.noc_letter else ""
+       
+        relieving_url = request.build_absolute_uri(employee.relieving_letter.url) if employee.relieving_letter else ""
+        salary_url = request.build_absolute_uri(employee.salary_proof.url) if employee.salary_proof else ""
+
+        subject = "New Employee Onboarding Submission"
+
+        html_content = f"""
+        
+        <h2>New Employee Onboarding Submission</h2>
+
+        <h3>Basic Details</h3>
+        <p><b>Name:</b> {employee.first_name} {employee.last_name}</p>
+        <p><b>Email:</b> {employee.email}</p>
+        <p><b>Mobile:</b> {employee.mobile}</p>
+        <p><b>Role:</b> {employee.role}</p>
+        <p><b>Division:</b> {employee.division}</p>
+        <p><b>Office:</b> {employee.office}</p>
+        <p><b>Date of Joining:</b> {employee.doj}</p>
+
+        <h3>Personal Details</h3>
+        <p><b>Father Name:</b> {employee.father_name}</p>
+        <p><b>Date of Birth:</b> {employee.dob}</p>
+        <p><b>Address:</b> {employee.address}</p>
+        <p><b>Emergency Contact:</b> {employee.emerg_name} - {employee.emerg_phone}</p>
+        <p><b>Blood Group:</b> {employee.blood_group}</p>
+
+        <h3>Bank Details</h3>
+        <p><b>Account Name:</b> {employee.acc_name}</p>
+        <p><b>Bank Name:</b> {employee.bank_name}</p>
+        <p><b>Account Number:</b> {employee.acc_no}</p>
+        <p><b>IFSC:</b> {employee.ifsc}</p>
+
+        <h3>Professional References</h3>
+        <p><b>Reference 1:</b> {employee.ref1_name} ({employee.ref1_desg})</p>
+        <p>{employee.ref1_org} - {employee.ref1_contact}</p>
+
+        <p><b>Reference 2:</b> {employee.ref2_name} ({employee.ref2_desg})</p>
+        <p>{employee.ref2_org} - {employee.ref2_contact}</p>
+
+        <h3>Documents</h3>
+
+        {doc_link("Aadhaar Card", aadhaar)}
+        {doc_link("PAN Card", pan)}
+        {doc_link("Photo", photo)}
+
+        {doc_link("10th Certificate", tenth)}
+        {doc_link("12th Certificate", inter)}
+        {doc_link("Degree Certificate", degree)}
+
+        {doc_link("College ID", college)}
+        {doc_link("NOC Letter", noc)}
+
+        {doc_link("Relieving Letter", relieving_url)}
+        {doc_link("Salary Proof", salary_url)}
+
+        <h3>Declaration</h3>
+        <p><b>Offer Letter Accepted:</b> {employee.offer_accepted}</p>
+        <p><b>NDA Accepted:</b> {employee.nda_accepted}</p>
+        <p><b>Signature:</b> {employee.signature}</p>
+        <p><b>Sign Date:</b> {employee.sign_date}</p>
+
+        <hr>
+        <p>Submitted at: {employee.created_at}</p>
+        """
+
+        email = EmailMultiAlternatives(
+            subject,
+            "",
+            settings.EMAIL_HOST_USER,
+            [
+                "hr@magsmen.com",
+                "ceo@grofession.com",
+                # "ajaychimata205@gmail.com",
+                # "kajasuresh522@gmail.com",
+                employee.email
+            ]
+        )
+
+        email.attach_alternative(html_content, "text/html")
+        email.send()
+
+        return JsonResponse({
+            "status": "success",
+            "message": "Onboarding submitted and email sent successfully"
+        })
+
+
+def doc_link(label, url):
+    if url:
+        return f'<p>{label}: <a href="{url}" target="_blank">VIEW</a></p>'
+    return f'<p>{label}: Not Uploaded</p>'
 
 
 
@@ -600,7 +774,7 @@ def api_view(http_method_names):
 
 
 def youtube_stats(request):
-
+    
     api_key = settings.YOUTUBE_API_KEY
     channel_id = settings.YOUTUBE_CHANNEL_ID
 

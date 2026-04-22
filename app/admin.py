@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate,NewBusinessQuestionnaire,ExistingBusinessQuestionnaire
+from .models import Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate,NewBusinessQuestionnaire,ExistingBusinessQuestionnaire,EmployeeOnboarding
 from simple_history.admin import SimpleHistoryAdmin
 import csv, json
 from django.http import HttpResponse
@@ -396,6 +396,23 @@ class ExistingBusinessQuestionnaireAdmin(admin.ModelAdmin):
 
 
 
+class EmployeeAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "first_name",
+        "last_name",
+        "email",
+        "mobile",
+        "role",
+        "division",
+        "office",
+        "created_at"
+    )
+
+
+
+
+
 
 
 admin.register(PieChartEntry,PieChartEntryAdmin)
@@ -403,6 +420,7 @@ admin.site.register(Assessment, AssessmentAdmin)
 admin.site.register(Intaklksstatspupdate, IntaklksstatspupdateAdmin)
 admin.site.register(NewBusinessQuestionnaire)
 admin.site.register(ExistingBusinessQuestionnaire)
+admin.site.register(EmployeeOnboarding,EmployeeAdmin)
 
 
 
