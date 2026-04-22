@@ -114,7 +114,7 @@ CORS_ALLOWED_ORIGINS = [
     # "http://localhost:5173",
     "https://mibbs.ai",
     "https://intalks.in",
-    "https://grofessors.com/"
+    "https://grofesion.com"
 ]
 
 
@@ -123,7 +123,7 @@ CSRF_TRUSTED_ORIGINS = [
     # "http://localhost:5173",
     "https://mibbs.ai",
     "https://intalks.in",
-    "https://grofessors.com/"
+    "https://grofesion.com"
 ]
 
 
