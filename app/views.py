@@ -1,5 +1,7 @@
 
 # views.py
+from email.quoprimime import header_check
+
 from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -7,8 +9,8 @@ from rest_framework import status
 from django.contrib.auth import authenticate,login
 from django.contrib.auth import login as django_login
 from urllib3 import request
-from .serializers import RegisterSerializer,LoginSerializer,UserSerializer,ForgotPasswordSerializer,ResetPasswordSerializer,AssessmentSerializer,Intaklksstatspupdate,IntalksStatsSerializer,NewBusinessSerializer, ExistingBusinessSerializer
-from .models import Intaklksstatspupdate, Users, EmployeeOnboarding
+from .serializers import RegisterSerializer,LoginSerializer,UserSerializer,ForgotPasswordSerializer,ResetPasswordSerializer,AssessmentSerializer,Intaklksstatspupdate,IntalksStatsSerializer,NewBusinessSerializer, ExistingBusinessSerializer,EODReportSerializer
+from .models import Intaklksstatspupdate, Users, EmployeeOnboarding,EODReport
 from django.contrib.auth import logout
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -116,66 +118,126 @@ def submit_onboarding(request):
         relieving_url = request.build_absolute_uri(employee.relieving_letter.url) if employee.relieving_letter else ""
         salary_url = request.build_absolute_uri(employee.salary_proof.url) if employee.salary_proof else ""
 
+
         subject = "New Employee Onboarding Submission"
 
+        # Helper style for section headers
+        header_style = "background-color: #f2f2f2; font-weight: bold; padding: 10px; border: 1px solid #ddd; color: #333;"
+        cell_style = "padding: 8px; border: 1px solid #ddd; vertical-align: top;"
+        label_style = "font-weight: bold; width: 30%; background-color: #fafafa; " + cell_style
+
         html_content = f"""
-        
-        <h2>New Employee Onboarding Submission</h2>
+        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: auto; border: 1px solid #eee; padding: 20px;">
+            <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">New Employee Onboarding Submission</h2>
 
-        <h3>Basic Details</h3>
-        <p><b>Name:</b> {employee.first_name} {employee.last_name}</p>
-        <p><b>Email:</b> {employee.email}</p>
-        <p><b>Mobile:</b> {employee.mobile}</p>
-        <p><b>Role:</b> {employee.role}</p>
-        <p><b>Division:</b> {employee.division}</p>
-        <p><b>Office:</b> {employee.office}</p>
-        <p><b>Date of Joining:</b> {employee.doj}</p>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr><td colspan="2" style="{header_style}">Basic Details</td></tr>
+                <tr><td style="{label_style}">Name</td><td style="{cell_style}">{employee.first_name} {employee.last_name}</td></tr>
+                <tr><td style="{label_style}">Email</td><td style="{cell_style}">{employee.email}</td></tr>
+                <tr><td style="{label_style}">Mobile</td><td style="{cell_style}">{employee.mobile}</td></tr>
+                <tr><td style="{label_style}">Role</td><td style="{cell_style}">{employee.role}</td></tr>
+                <tr><td style="{label_style}">Division</td><td style="{cell_style}">{employee.division}</td></tr>
+                <tr><td style="{label_style}">Office</td><td style="{cell_style}">{employee.office}</td></tr>
+                <tr><td style="{label_style}">Date of Joining</td><td style="{cell_style}">{employee.doj}</td></tr>
 
-        <h3>Personal Details</h3>
-        <p><b>Father Name:</b> {employee.father_name}</p>
-        <p><b>Date of Birth:</b> {employee.dob}</p>
-        <p><b>Address:</b> {employee.address}</p>
-        <p><b>Emergency Contact:</b> {employee.emerg_name} - {employee.emerg_phone}</p>
-        <p><b>Blood Group:</b> {employee.blood_group}</p>
+                <tr><td colspan="2" style="{header_style}">Personal Details</td></tr>
+                <tr><td style="{label_style}">Father's Name</td><td style="{cell_style}">{employee.father_name}</td></tr>
+                <tr><td style="{label_style}">Date of Birth</td><td style="{cell_style}">{employee.dob}</td></tr>
+                <tr><td style="{label_style}">Address</td><td style="{cell_style}">{employee.address}</td></tr>
+                <tr><td style="{label_style}">Emergency Contact</td><td style="{cell_style}">{employee.emerg_name} - {employee.emerg_phone}</td></tr>
+                <tr><td style="{label_style}">Blood Group</td><td style="{cell_style}">{employee.blood_group}</td></tr>
 
-        <h3>Bank Details</h3>
-        <p><b>Account Name:</b> {employee.acc_name}</p>
-        <p><b>Bank Name:</b> {employee.bank_name}</p>
-        <p><b>Account Number:</b> {employee.acc_no}</p>
-        <p><b>IFSC:</b> {employee.ifsc}</p>
+                <tr><td colspan="2" style="{header_style}">Bank Details</td></tr>
+                <tr><td style="{label_style}">Account Name</td><td style="{cell_style}">{employee.acc_name}</td></tr>
+                <tr><td style="{label_style}">Bank Name</td><td style="{cell_style}">{employee.bank_name}</td></tr>
+                <tr><td style="{label_style}">Account Number</td><td style="{cell_style}">{employee.acc_no}</td></tr>
+                <tr><td style="{label_style}">IFSC</td><td style="{cell_style}">{employee.ifsc}</td></tr>
 
-        <h3>Professional References</h3>
-        <p><b>Reference 1:</b> {employee.ref1_name} ({employee.ref1_desg})</p>
-        <p>{employee.ref1_org} - {employee.ref1_contact}</p>
+                <tr><td colspan="2" style="{header_style}">Professional References</td></tr>
+                <tr><td style="{label_style}">Reference 1</td><td style="{cell_style}">{employee.ref1_name} ({employee.ref1_desg})<br>{employee.ref1_org} - {employee.ref1_contact}</td></tr>
+                <tr><td style="{label_style}">Reference 2</td><td style="{cell_style}">{employee.ref2_name} ({employee.ref2_desg})<br>{employee.ref2_org} - {employee.ref2_contact}</td></tr>
 
-        <p><b>Reference 2:</b> {employee.ref2_name} ({employee.ref2_desg})</p>
-        <p>{employee.ref2_org} - {employee.ref2_contact}</p>
+                <tr><td colspan="2" style="{header_style}">Documents</td></tr>
+                <tr>
+                    <td colspan="2" style="{cell_style}">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            {doc_link("Aadhaar Card", aadhaar)} | {doc_link("PAN Card", pan)} | {doc_link("Photo", photo)}<br>
+                            {doc_link("10th Certificate", tenth)} | {doc_link("12th Certificate", inter)} | {doc_link("Degree Certificate", degree)}<br>
+                            {doc_link("College ID", college)} | {doc_link("NOC Letter", noc)}<br>
+                            {doc_link("Relieving Letter", relieving_url)} | {doc_link("Salary Proof", salary_url)}
+                        </div>
+                    </td>
+                </tr>
 
-        <h3>Documents</h3>
+                <tr><td colspan="2" style="{header_style}">Declaration</td></tr>
+                <tr><td style="{label_style}">Offer Accepted</td><td style="{cell_style}">{employee.offer_accepted}</td></tr>
+                <tr><td style="{label_style}">NDA Accepted</td><td style="{cell_style}">{employee.nda_accepted}</td></tr>
+                <tr><td style="{label_style}">Signature</td><td style="{cell_style}">{employee.signature}</td></tr>
+                <tr><td style="{label_style}">Sign Date</td><td style="{cell_style}">{employee.sign_date}</td></tr>
+            </table>
 
-        {doc_link("Aadhaar Card", aadhaar)}
-        {doc_link("PAN Card", pan)}
-        {doc_link("Photo", photo)}
+            <p style="font-size: 12px; color: #7f8c8d;">Submitted at: {employee.created_at}</p>
+        </div>
+        """ 
 
-        {doc_link("10th Certificate", tenth)}
-        {doc_link("12th Certificate", inter)}
-        {doc_link("Degree Certificate", degree)}
+        # subject = "New Employee Onboarding Submission"
 
-        {doc_link("College ID", college)}
-        {doc_link("NOC Letter", noc)}
+        # html_content = f"""
 
-        {doc_link("Relieving Letter", relieving_url)}
-        {doc_link("Salary Proof", salary_url)}
+        # <h3>Basic Details</h3>
+        # <p><b>Name:</b> {employee.first_name} {employee.last_name}</p>
+        # <p><b>Email:</b> {employee.email}</p>
+        # <p><b>Mobile:</b> {employee.mobile}</p>
+        # <p><b>Role:</b> {employee.role}</p>
+        # <p><b>Division:</b> {employee.division}</p>
+        # <p><b>Office:</b> {employee.office}</p>
+        # <p><b>Date of Joining:</b> {employee.doj}</p>
 
-        <h3>Declaration</h3>
-        <p><b>Offer Letter Accepted:</b> {employee.offer_accepted}</p>
-        <p><b>NDA Accepted:</b> {employee.nda_accepted}</p>
-        <p><b>Signature:</b> {employee.signature}</p>
-        <p><b>Sign Date:</b> {employee.sign_date}</p>
+        # <h3>Personal Details</h3>
+        # <p><b>Father Name:</b> {employee.father_name}</p>
+        # <p><b>Date of Birth:</b> {employee.dob}</p>
+        # <p><b>Address:</b> {employee.address}</p>
+        # <p><b>Emergency Contact:</b> {employee.emerg_name} - {employee.emerg_phone}</p>
+        # <p><b>Blood Group:</b> {employee.blood_group}</p>
 
-        <hr>
-        <p>Submitted at: {employee.created_at}</p>
-        """
+        # <h3>Bank Details</h3>
+        # <p><b>Account Name:</b> {employee.acc_name}</p>
+        # <p><b>Bank Name:</b> {employee.bank_name}</p>
+        # <p><b>Account Number:</b> {employee.acc_no}</p>
+        # <p><b>IFSC:</b> {employee.ifsc}</p>
+
+        # <h3>Professional References</h3>
+        # <p><b>Reference 1:</b> {employee.ref1_name} ({employee.ref1_desg})</p>
+        # <p>{employee.ref1_org} - {employee.ref1_contact}</p>
+
+        # <p><b>Reference 2:</b> {employee.ref2_name} ({employee.ref2_desg})</p>
+        # <p>{employee.ref2_org} - {employee.ref2_contact}</p>
+
+        # <h3>Documents</h3>
+
+        # {doc_link("Aadhaar Card", aadhaar)}
+        # {doc_link("PAN Card", pan)}
+        # {doc_link("Photo", photo)}
+
+        # {doc_link("10th Certificate", tenth)}
+        # {doc_link("12th Certificate", inter)}
+        # {doc_link("Degree Certificate", degree)}
+
+        # {doc_link("College ID", college)}
+        # {doc_link("NOC Letter", noc)}
+
+        # {doc_link("Relieving Letter", relieving_url)}
+        # {doc_link("Salary Proof", salary_url)}
+
+        # <h3>Declaration</h3>
+        # <p><b>Offer Letter Accepted:</b> {employee.offer_accepted}</p>
+        # <p><b>NDA Accepted:</b> {employee.nda_accepted}</p>
+        # <p><b>Signature:</b> {employee.signature}</p>
+        # <p><b>Sign Date:</b> {employee.sign_date}</p>
+
+        # <hr>
+        # <p>Submitted at: {employee.created_at}</p>
+        # """
 
         email = EmailMultiAlternatives(
             subject,
@@ -186,23 +248,157 @@ def submit_onboarding(request):
                 "ceo@grofession.com",
                 # "ajaychimata205@gmail.com",
                 # "kajasuresh522@gmail.com",
-                employee.email
+                # employee.email
             ]
         )
 
         email.attach_alternative(html_content, "text/html")
         email.send()
 
-        return JsonResponse({
-            "status": "success",
-            "message": "Onboarding submitted and email sent successfully"
-        })
+        # return JsonResponse({
+        #     "status": "success",
+        #     "message": "Onboarding submitted and email sent successfully"
+        # })
+
+    employee_message = f"""
+        Dear {employee.first_name},
+
+        We are pleased to inform you that you have successfully completed the digital onboarding process. On behalf of the entire team at Magsmen, we warmly welcome you aboard.
+
+        Please find below an outline of your structured integration plan for the coming weeks:
+
+        1. Day 1–3 | Reading Period  
+        Full handbook review. You will not be assigned client work during this phase.
+
+        2. Day 3–7 | Shadowing Period  
+        You will be paired with a senior team member to observe day-to-day operations and team workflows.
+
+        3. Week 2–4 | Supervised Work  
+        You will undertake assigned tasks under supervision, with daily written feedback provided to support your development.
+
+        4. Day 30 | First Performance Check-In  
+        A formal review meeting with the Head of Operations to assess your initial progress and address any concerns.
+
+        5. Day 90 | Probation Review  
+        A comprehensive formal assessment measured against the success criteria defined for your role.
+
+        We are confident that this structured approach will help you transition smoothly into your new role. Please ensure you familiarise yourself with the onboarding materials and do not hesitate to seek guidance as needed.
+
+        For any queries, please contact the HR team:
+        hr@magsmen.com
+        +91 90449 10449
+
+        Best Regards,  
+        Magsmen Team
+        """
+
+    send_mail(
+        "Welcome to Magsmen 🚀",
+        employee_message,
+        settings.EMAIL_HOST_USER,
+         [employee.email],
+            fail_silently=False
+        )
+
+        # =========================
+        # END NEW CODE
+        # =========================
+
+
+    return JsonResponse({
+        "status": "success",
+        "message": "Onboarding submitted and email sent successfully"
+    })
+
 
 
 def doc_link(label, url):
     if url:
         return f'<p>{label}: <a href="{url}" target="_blank">VIEW</a></p>'
     return f'<p>{label}: Not Uploaded</p>'
+
+
+
+
+# Grofesion daily work report - EOD Report
+
+@api_view(['POST'])
+def submit_eod(request):
+    serializer = EODReportSerializer(data=request.data)
+
+    if serializer.is_valid():
+        instance = serializer.save()
+
+        subject = f"EOD Report - {instance.employee_name} ({instance.date_iso})"
+
+        # Plain Text Fallback
+        message = f"EOD REPORT\n\nEmployee: {instance.employee_name}\nDate: {instance.date}\nTotal Hours: {instance.total_hours}"
+
+        # CSS Styles for Email Clients
+        table_style = "width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; margin-bottom: 20px; border: 1px solid #e0e0e0;"
+        header_style = "background-color: #E8510A; color: white; padding: 12px; text-align: left; font-size: 16px; border: 1px solid #E8510A;"
+        label_style = "background-color: #f9f9f9; font-weight: bold; padding: 10px; border: 1px solid #e0e0e0; width: 30%; color: #333;"
+        value_style = "padding: 10px; border: 1px solid #e0e0e0; color: #555;"
+        sub_header = "background-color: #f2f2f2; font-weight: bold; padding: 10px; border: 1px solid #e0e0e0; color: #E8510A; text-transform: uppercase; font-size: 13px;"
+
+        # HTML Content
+        html_content = f"""
+        <div style="background-color: #f4f4f4; padding: 20px;">
+            <div style="max-width: 700px; margin: auto; background-color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+                <h2 style="color: #E8510A; margin-top: 0; border-bottom: 2px solid #E8510A; padding-bottom: 10px;">Daily End of Day (EOD) Report</h2>
+                
+                <table style="{table_style}">
+                    <tr><th colspan="2" style="{header_style}">Employee Information</th></tr>
+                    <tr><td style="{label_style}">Employee Name</td><td style="{value_style}">{instance.employee_name}</td></tr>
+                    <tr><td style="{label_style}">Department / Role</td><td style="{value_style}">{instance.department} - {instance.role}</td></tr>
+                    <tr><td style="{label_style}">Report Date</td><td style="{value_style}">{instance.date}</td></tr>
+                    <tr><td style="{label_style}">Working Hours</td><td style="{value_style}">{instance.start_time} to {instance.end_time} ({instance.total_hours} hrs)</td></tr>
+
+                    <tr><td colspan="2" style="{sub_header}">Task Summary & Metrics</td></tr>
+                    <tr>
+                        <td colspan="2" style="{value_style}">
+                            <table style="width: 100%; text-align: center; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 10px; border-right: 1px solid #eee;"><b>Total</b><br>{instance.tasks_count}</td>
+                                    <td style="padding: 10px; border-right: 1px solid #eee; color: green;"><b>Done</b><br>{instance.tasks_done}</td>
+                                    <td style="padding: 10px; border-right: 1px solid #eee; color: orange;"><b>Partial</b><br>{instance.tasks_partial}</td>
+                                    <td style="padding: 10px; color: red;"><b>Blocked</b><br>{instance.tasks_blocked}</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <tr><th colspan="2" style="{header_check if 'header_cell' in locals() else header_style}">Work Details</th></tr>
+                    <tr><td style="{label_style}">Task Details</td><td style="{value_style}"><pre style="white-space: pre-wrap; font-family: inherit;">{instance.tasks_text}</pre></td></tr>
+                    <tr><td style="{label_style}">Deliverables</td><td style="{value_style}">{instance.deliverables}</td></tr>
+                    <tr><td style="{label_style}">Meetings</td><td style="{value_style}"><pre style="white-space: pre-wrap; font-family: inherit;">{instance.meetings_text}</pre></td></tr>
+                    <tr><td style="{label_style}">Blockers</td><td style="{value_style}"><span style="color: #d93025;">{instance.blocker_text}</span></td></tr>
+                    <tr><td style="{label_style}">Tomorrow's Plan</td><td style="{value_style}">{instance.tomorrow_plan}</td></tr>
+
+                    <tr><td colspan="2" style="{sub_header}">Status & Feedback</td></tr>
+                    <tr><td style="{label_style}">Daily Mood</td><td style="{value_style}">{instance.mood_score}/5 {instance.mood_emoji} ({instance.mood_label})</td></tr>
+                    <tr><td style="{label_style}">Notes</td><td style="{value_style}">{instance.general_note}</td></tr>
+                </table>
+
+                <p style="font-size: 11px; color: #999; text-align: center;">Submitted automatically via Grofession Portal at {instance.submitted_at}</p>
+            </div>
+        </div>
+        """
+
+        recipient_list = [instance.hr_email, 'ceo@grofesion.com']
+
+        try:
+            email = EmailMultiAlternatives(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list)
+            email.attach_alternative(html_content, "text/html")
+            email.send()
+        except Exception as e:
+            print("Email Error:", str(e))
+
+        return Response({"status": "success", "message": "EOD Report Submitted & Email Sent Successfully"}, status=status.HTTP_201_CREATED)
+
+    return Response({"status": "error", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 

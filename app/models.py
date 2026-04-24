@@ -472,3 +472,100 @@ class EmployeeOnboarding(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+
+
+
+
+
+
+class EODReport(models.Model):
+
+    # ========================
+    # EMPLOYEE DETAILS
+    # ========================
+    employee_name = models.CharField(max_length=255)
+    department = models.CharField(max_length=100)
+    role = models.CharField(max_length=100)
+
+    # ========================
+    # DATE DETAILS
+    # ========================
+    date = models.CharField(max_length=100)
+    date_iso = models.DateField()
+    weekday = models.CharField(max_length=50)
+
+    # ========================
+    # TIME DETAILS
+    # ========================
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    total_hours = models.CharField(max_length=50)
+
+    # ========================
+    # TASK SUMMARY
+    # ========================
+    tasks_count = models.IntegerField()
+    min_tasks = models.IntegerField()
+    met_minimum = models.CharField(max_length=10)
+
+    tasks_done = models.IntegerField()
+    tasks_partial = models.IntegerField()
+    tasks_carried = models.IntegerField()
+    tasks_blocked = models.IntegerField()
+
+    # ========================
+    # TASK DETAILS
+    # ========================
+    tasks_text = models.TextField()
+    tasks_json = models.JSONField()
+
+    # ========================
+    # MEETINGS
+    # ========================
+    no_meetings = models.CharField(max_length=10)
+    meetings_count = models.IntegerField()
+    meetings_text = models.TextField()
+    meetings_json = models.JSONField()
+
+    # ========================
+    # OUTPUT / DELIVERABLES
+    # ========================
+    deliverables = models.TextField()
+
+    # ========================
+    # BLOCKERS
+    # ========================
+    has_blocker = models.CharField(max_length=10)
+    blocker_text = models.TextField(blank=True, null=True)
+
+    # ========================
+    # TOMORROW PLAN
+    # ========================
+    tomorrow_plan = models.TextField(blank=True, null=True)
+
+    # ========================
+    # MOOD
+    # ========================
+    mood_score = models.IntegerField()
+    mood_label = models.CharField(max_length=50)
+    mood_emoji = models.CharField(max_length=10)
+
+    # ========================
+    # NOTES
+    # ========================
+    general_note = models.TextField(blank=True, null=True)
+
+    # ========================
+    # SUBMISSION INFO
+    # ========================
+    submitted_at = models.CharField(max_length=100)
+    hr_email = models.EmailField()
+
+    # ========================
+    # AUTO FIELDS
+    # ========================
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.employee_name} - {self.date_iso}"

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate,NewBusinessQuestionnaire,ExistingBusinessQuestionnaire
+from .models import EODReport, Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate,NewBusinessQuestionnaire,ExistingBusinessQuestionnaire
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
@@ -333,3 +333,8 @@ class ExistingBusinessSerializer(serializers.ModelSerializer):
 
 
 
+
+class EODReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EODReport
+        fields = '__all__'
