@@ -35,8 +35,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 
 
-
-@csrf_exempt
+@api_view(['POST'])
 def submit_onboarding(request):
 
     if request.method == "POST":
@@ -114,7 +113,7 @@ def submit_onboarding(request):
         degree = request.build_absolute_uri(employee.degree_certificate.url) if employee.degree_certificate else ""
         college = request.build_absolute_uri(employee.college_id.url) if employee.college_id else ""
         noc = request.build_absolute_uri(employee.noc_letter.url) if employee.noc_letter else ""
-       
+        
         relieving_url = request.build_absolute_uri(employee.relieving_letter.url) if employee.relieving_letter else ""
         salary_url = request.build_absolute_uri(employee.salary_proof.url) if employee.salary_proof else ""
 
@@ -247,7 +246,7 @@ def submit_onboarding(request):
                 "hr@magsmen.com",
                 "ceo@grofession.com",
                 # "ajaychimata205@gmail.com",
-                # "kajasuresh522@gmail.com",
+                "kajasuresh522@gmail.com",
                 # employee.email
             ]
         )
@@ -296,7 +295,7 @@ def submit_onboarding(request):
         "Welcome to Magsmen 🚀",
         employee_message,
         settings.EMAIL_HOST_USER,
-         [employee.email],
+        [employee.email],
             fail_silently=False
         )
 
