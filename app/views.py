@@ -32,76 +32,114 @@ from django.db.models import Max
 from rest_framework.decorators import api_view
 import requests
 from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 
+
+
+MAX_FILE_SIZE = settings.MAX_FILE_SIZE
+
+def validate_file_size(uploaded_file, field_name):
+    if uploaded_file and uploaded_file.size > MAX_FILE_SIZE:
+        return f"{field_name} must be less than or equal to {MAX_FILE_SIZE // (1024 * 1024)}MB."
+    return None
 
 
 @api_view(['POST'])
 def submit_onboarding(request):
-
     if request.method == "POST":
 
+         # =========================
+        # FILE SIZE VALIDATION
+        # =========================
+
+        files_to_check = {
+            "aadhaar": request.FILES.get("aadhaar"),
+            "pan": request.FILES.get("pan"),
+            "photo": request.FILES.get("photo"),
+            "tenth": request.FILES.get("tenth"),
+            "twelfth": request.FILES.get("twelfth"),
+            "degree": request.FILES.get("degree"),
+            "collegeid": request.FILES.get("collegeid"),
+            "noc": request.FILES.get("noc"),
+            "relieving": request.FILES.get("relieving"),
+            "salary": request.FILES.get("salary"),
+        }
+
+        for field_name, uploaded_file in files_to_check.items():
+
+            error = validate_file_size(uploaded_file, field_name)
+
+            if error:
+                return JsonResponse(
+                    {
+                        "status": "error",
+                        "message": error
+                    },
+                    status=400
+                )
+
         employee = EmployeeOnboarding.objects.create(
+            
+                first_name=request.POST.get("firstName"),
+                last_name=request.POST.get("lastName"),
 
-            first_name=request.POST.get("firstName"),
-            last_name=request.POST.get("lastName"),
+                email=request.POST.get("email"),
+                mobile=request.POST.get("mobile"),
 
-            email=request.POST.get("email"),
-            mobile=request.POST.get("mobile"),
+                doj=request.POST.get("doj"),
+                role=request.POST.get("role"),
+                division=request.POST.get("division"),
+                office=request.POST.get("office"),
 
-            doj=request.POST.get("doj"),
-            role=request.POST.get("role"),
-            division=request.POST.get("division"),
-            office=request.POST.get("office"),
+                self_intro=request.POST.get("selfIntro"),
+                linkedin=request.POST.get("linkedin"),
 
-            self_intro=request.POST.get("selfIntro"),
-            linkedin=request.POST.get("linkedin"),
+                father_name=request.POST.get("fatherName"),
+                dob=request.POST.get("dob"),
+                address=request.POST.get("address"),
 
-            father_name=request.POST.get("fatherName"),
-            dob=request.POST.get("dob"),
-            address=request.POST.get("address"),
+                emerg_name=request.POST.get("emergName"),
+                emerg_phone=request.POST.get("emergPhone"),
 
-            emerg_name=request.POST.get("emergName"),
-            emerg_phone=request.POST.get("emergPhone"),
+                blood_group=request.POST.get("bloodGroup"),
+                qualification=request.POST.get("qual"),
 
-            blood_group=request.POST.get("bloodGroup"),
-            qualification=request.POST.get("qual"),
+                acc_name=request.POST.get("accName"),
+                bank_name=request.POST.get("bankName"),
+                acc_no=request.POST.get("accNo"),
+                ifsc=request.POST.get("ifsc"),
+                branch=request.POST.get("branch"),
 
-            acc_name=request.POST.get("accName"),
-            bank_name=request.POST.get("bankName"),
-            acc_no=request.POST.get("accNo"),
-            ifsc=request.POST.get("ifsc"),
-            branch=request.POST.get("branch"),
+                ref1_name=request.POST.get("ref1Name"),
+                ref1_desg=request.POST.get("ref1Desg"),
+                ref1_org=request.POST.get("ref1Org"),
+                ref1_contact=request.POST.get("ref1Contact"),
 
-            ref1_name=request.POST.get("ref1Name"),
-            ref1_desg=request.POST.get("ref1Desg"),
-            ref1_org=request.POST.get("ref1Org"),
-            ref1_contact=request.POST.get("ref1Contact"),
+                ref2_name=request.POST.get("ref2Name"),
+                ref2_desg=request.POST.get("ref2Desg"),
+                ref2_org=request.POST.get("ref2Org"),
+                ref2_contact=request.POST.get("ref2Contact"),
 
-            ref2_name=request.POST.get("ref2Name"),
-            ref2_desg=request.POST.get("ref2Desg"),
-            ref2_org=request.POST.get("ref2Org"),
-            ref2_contact=request.POST.get("ref2Contact"),
+                aadhaar_card=request.FILES.get("aadhaar"),
+                pan_card=request.FILES.get("pan"),
+                photo=request.FILES.get("photo"),
 
-            aadhaar_card=request.FILES.get("aadhaar"),
-            pan_card=request.FILES.get("pan"),
-            photo=request.FILES.get("photo"),
+                tenth_certificate=request.FILES.get("tenth"),
+                inter_certificate=request.FILES.get("twelfth"),
+                degree_certificate=request.FILES.get("degree"),
 
-            tenth_certificate=request.FILES.get("tenth"),
-            inter_certificate=request.FILES.get("twelfth"),
-            degree_certificate=request.FILES.get("degree"),
+                college_id=request.FILES.get("collegeid"),
+                noc_letter=request.FILES.get("noc"),
+                relieving_letter=request.FILES.get("relieving"),
+                salary_proof=request.FILES.get("salary"),
 
-            college_id=request.FILES.get("collegeid"),
-            noc_letter=request.FILES.get("noc"),
-            relieving_letter=request.FILES.get("relieving"),
-            salary_proof=request.FILES.get("salary"),
+                offer_accepted=request.POST.get("offerCb") == "true",
+                nda_accepted=request.POST.get("ndaCb") == "true",
 
-            offer_accepted=request.POST.get("offerCb") == "true",
-            nda_accepted=request.POST.get("ndaCb") == "true",
+                handbook_sections=request.POST.get("hb_sections"),
 
-            handbook_sections=request.POST.get("hb_sections"),
-
-            signature=request.POST.get("signature"),
-            sign_date=request.POST.get("signDate"),
+                signature=request.POST.get("signature"),
+                sign_date=request.POST.get("signDate"),
         )
 
         # Document URLs
@@ -243,10 +281,9 @@ def submit_onboarding(request):
             "",
             settings.EMAIL_HOST_USER,
             [
+                # "kajasuresh522@gmail.com"
                 "hr@magsmen.com",
                 "ceo@grofession.com",
-                # "ajaychimata205@gmail.com",
-                "kajasuresh522@gmail.com",
                 # employee.email
             ]
         )
@@ -320,7 +357,6 @@ def doc_link(label, url):
 
 
 # Grofesion daily work report - EOD Report
-
 @api_view(['POST'])
 def submit_eod(request):
     serializer = EODReportSerializer(data=request.data)
@@ -384,19 +420,54 @@ def submit_eod(request):
         </div>
         """
 
-        recipient_list = [instance.hr_email, 'ceo@grofesion.com']
+        recipient_list = [
+            instance.hr_email,
+            'ceo@grofesion.com',
+        ]
 
         try:
-            email = EmailMultiAlternatives(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list)
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=recipient_list
+            )
+
             email.attach_alternative(html_content, "text/html")
-            email.send()
+
+            email.send(fail_silently=False)
+
+            print("✅ EMAIL SENT SUCCESSFULLY")
+
+            return Response(
+                {
+                    "status": "success",
+                    "message": "EOD Report Submitted & Email Sent Successfully"
+                },
+                status=status.HTTP_201_CREATED
+            )
+
         except Exception as e:
-            print("Email Error:", str(e))
+            print("❌ EMAIL ERROR:", str(e))
 
-        return Response({"status": "success", "message": "EOD Report Submitted & Email Sent Successfully"}, status=status.HTTP_201_CREATED)
+            # Data already saved, only mail failed
+            return Response(
+                {
+                    "status": "partial_success",
+                    "message": "EOD Report Saved Successfully, but Email Sending Failed",
+                    "email_error": str(e)
+                },
+                status=status.HTTP_201_CREATED
+            )
 
-    return Response({"status": "error", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+    return Response(
+        {
+            "status": "error",
+            "errors": serializer.errors
+        },
+        status=status.HTTP_400_BAD_REQUEST
+    )
 
 
 

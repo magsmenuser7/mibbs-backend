@@ -36,6 +36,10 @@ YOUTUBE_CHANNEL_ID = os.getenv("YOUTUBE_CHANNEL_ID")
 
 
 
+DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024   # 25MB total request
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024     # 2MB in-memory threshold
+MAX_FILE_SIZE = 2 * 1024 * 1024
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -215,14 +219,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = 'smtp.zoho.in'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'magsmenconnect@gmail.com'          # your Gmail address
-EMAIL_HOST_PASSWORD = 'lhln yivw ywva ewiy'         # Gmail App Password (not your real password)
+EMAIL_HOST_USER = 'hr@magsmen.com'          # your Gmail address
+EMAIL_HOST_PASSWORD = 'w17cv3WijRZ0'         # Gmail App Password (not your real password)
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-# lhln yivw ywva ewiy app password
+
+# magsmenconnect@gmail.com  old gmail 
+
+# lhln yivw ywva ewiy  app password this is old password
+
+# srvg zyzz tfqb xgvs new app password
+
 
 
 
