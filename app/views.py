@@ -40,7 +40,8 @@ MAX_FILE_SIZE = settings.MAX_FILE_SIZE
 
 def validate_file_size(uploaded_file, field_name):
     if uploaded_file and uploaded_file.size > MAX_FILE_SIZE:
-        return f"{field_name} must be less than or equal to {MAX_FILE_SIZE // (1024 * 1024)}MB."
+         return f"{field_name} must be less than or equal to {MAX_FILE_SIZE // (1024 * 1024)}MB."
+        #  return f"{field_name} must be less than or equal to 2MB." # {MAX_FILE_SIZE // (1024 * 1024)}MB."
     return None
 
 
@@ -283,7 +284,7 @@ def submit_onboarding(request):
             [
                 # "kajasuresh522@gmail.com"
                 "hr@magsmen.com",
-                "ceo@grofession.com",
+                "ceo@grofesion.com",
                 # employee.email
             ]
         )
