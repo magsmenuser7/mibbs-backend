@@ -1,7 +1,7 @@
 # accounts/urls.py
 from django.urls import path
-from .views import AllGuests, HomeEpisodes, RegisterView, LoginView,logout_view,google_login,Register,Login,AssessmentCreateView,\
-ForgotPasswordView, VerifyOtpView, ResetPasswordView,LoginOtpSendView,LoginOtpVerifyView,IntalksStatsGet,AllEpisodes, submit_eod, submit_onboarding,youtube_stats,save_questionnaire, youtube_stats
+from .views import AllGuests, HomeEpisodes, RegisterView, LoginView, ai_generate, app_settings, generate_blog,logout_view,google_login,Register,Login,AssessmentCreateView,\
+ForgotPasswordView, VerifyOtpView, ResetPasswordView,LoginOtpSendView,LoginOtpVerifyView,IntalksStatsGet,AllEpisodes, submit_eod, submit_onboarding, test_api,youtube_stats,save_questionnaire, youtube_stats,push_to_github
 
 urlpatterns = [
     path('registerUser', RegisterView.as_view(), name='register'),
@@ -24,6 +24,13 @@ urlpatterns = [
     path("youtube-stats/", youtube_stats, name="youtube-stats"),
     path("submit-onboarding/", submit_onboarding, name="submit-onboarding"),
     path("daily-work-report/", submit_eod, name="daily-work-report"),
+    path("test-api/", test_api, name="test-api"),
+    path('generate-blog/', generate_blog, name='generate-blog'),
+    path('ai-generate/', ai_generate, name='ai-generate'),        # NEW — required
+    path('push-to-github/', push_to_github, name='push-to-github'),
+    path('app-settings/', app_settings, name='app-settings'),
+
+
 
     # path('forgot-password/', ForgotPassword.as_view(), name='forgot-password'),  # ✅ NEW
     # path('reset-password/', ResetPassword.as_view(), name='reset-password'),      # ✅ NEW

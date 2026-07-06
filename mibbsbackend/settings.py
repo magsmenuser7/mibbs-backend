@@ -34,6 +34,17 @@ YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 YOUTUBE_CHANNEL_ID = os.getenv("YOUTUBE_CHANNEL_ID")
 
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+
+GITHUB_OWNER = os.getenv("GITHUB_OWNER")
+
+GITHUB_REPO = os.getenv("GITHUB_REPO")
+
+GITHUB_BRANCH = os.getenv("GITHUB_BRANCH")
+
+UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY")
 
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024   # 25MB total request
@@ -118,18 +129,22 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     # "http://localhost:8080",
     # "http://localhost:5173",
+    # "http://localhost:5174",
     "https://mibbs.ai",
     "https://intalks.in",
-    "https://grofesion.com"
+    "https://grofesion.com",
+    "https://magsmen.com"
 ]
 
 
 CSRF_TRUSTED_ORIGINS = [
     # "http://localhost:8080",
     # "http://localhost:5173",
+    # "http://localhost:5174",
     "https://mibbs.ai",
     "https://intalks.in",
-    "https://grofesion.com"
+    "https://grofesion.com",
+    "https://magsmen.com"
 ]
 
 

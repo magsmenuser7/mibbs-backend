@@ -1,6 +1,7 @@
 
 # views.py
 from email.quoprimime import header_check
+import os
 
 from django.http import JsonResponse
 from rest_framework.views import APIView
@@ -33,7 +34,12 @@ from rest_framework.decorators import api_view
 import requests
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
-
+from anthropic import Anthropic
+import json
+import traceback
+import requests as req
+import base64
+import re
 
 
 MAX_FILE_SIZE = settings.MAX_FILE_SIZE
@@ -1069,3 +1075,711 @@ def youtube_stats(request):
         return JsonResponse({
             "error": str(e)
         }, status=500)
+
+
+
+
+def test_api(request):
+    return JsonResponse({
+        "status": "success",
+        "message": "Django Connected"
+    })
+
+
+
+
+
+
+
+# ─── SETTINGS (backend connection status for the frontend) ───────────────
+def app_settings(request):
+    return JsonResponse({
+        "anthropic_connected": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "github_connected": bool(os.getenv("GITHUB_TOKEN")),
+        "youtube_connected": bool(os.getenv("YOUTUBE_API_KEY")),
+        "unsplash_connected": bool(os.getenv("UNSPLASH_ACCESS_KEY")),
+        "github_owner": os.getenv("GITHUB_OWNER", ""),
+        "github_repo": os.getenv("GITHUB_REPO", ""),
+        "github_branch": os.getenv("GITHUB_BRANCH", "main"),
+        "blog_folder": "src/blogs/",
+        "meta_folder": "src/pages/",
+        "youtube_channel_id": os.getenv("YOUTUBE_CHANNEL_ID", ""),
+        # NOTE: exposing the raw YouTube key to the browser is what lets the
+        # frontend call the YouTube Data API directly from client-side JS.
+        # That's how this app is architected (client calls YouTube directly),
+        # so the key IS visible in the browser's network tab / JS bundle.
+        # If that's not acceptable for your use case, proxy YouTube calls
+        # through Django instead of exposing the key here.
+        "youtube_api_key": os.getenv("YOUTUBE_API_KEY", ""),
+        "unsplash_access_key": os.getenv("UNSPLASH_ACCESS_KEY", ""),
+    })
+ 
+ 
+# ─── GENERIC AI ENDPOINT (for anything that ISN'T a blog post) ───────────
+# Channel Scanner analysis, video SEO packages, competitor spy reports,
+# and keyword research all send their own fully-formed prompt and expect
+# raw text/JSON back. This endpoint does exactly that — no hardcoded
+# "write a blog" wrapper.
+@csrf_exempt
+def ai_generate(request):
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "POST request required"}, status=405)
+    try:
+        data = json.loads(request.body)
+        prompt = (data.get("prompt") or "").strip()
+ 
+        if not prompt:
+            return JsonResponse({"status": "error", "message": "Prompt is required"}, status=400)
+ 
+        if not os.getenv("ANTHROPIC_API_KEY"):
+            return JsonResponse({"status": "error", "message": "ANTHROPIC_API_KEY not set on backend."}, status=500)
+ 
+        client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+ 
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+ 
+        text = message.content[0].text
+ 
+        return JsonResponse({"status": "success", "text": text})
+ 
+    except Exception as e:
+        print("AI_GENERATE ERROR =", str(e))
+        traceback.print_exc()
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+ 
+ 
+# ─── BLOG GENERATION (structured, keyword-specific) ───────────────────────
+@csrf_exempt
+def generate_blog(request):
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "POST request required"}, status=405)
+ 
+    try:
+        data = json.loads(request.body)
+        keyword = (data.get("keyword") or "").strip()
+ 
+        if not keyword:
+            return JsonResponse({"status": "error", "message": "Keyword is required"}, status=400)
+ 
+        if not os.getenv("ANTHROPIC_API_KEY"):
+            return JsonResponse({"status": "error", "message": "ANTHROPIC_API_KEY not set on backend."}, status=500)
+ 
+        client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+ 
+        prompt = f"""You are an SEO content writer for Magsmen Brand Consultants (magsmen.com),
+a brand strategy consulting firm serving Indian entrepreneurs, startup founders, and MSMEs.
+ 
+Write a complete SEO blog post targeting the keyword: "{keyword}"
+ 
+Return ONLY raw JSON — no markdown code fences, no commentary before or after —
+in exactly this shape:
+{{
+  "title": "SEO-optimized H1 title, under 60 characters",
+  "slug": "url-friendly-slug-based-on-the-keyword",
+  "excerpt": "1-2 sentence meta description, under 155 characters",
+  "category": "one of: Branding, Marketing, Strategy, Design, Growth",
+  "content": "the full blog post body in Markdown, 1200+ words, with H2 subheadings, professional business tone, and a conclusion. Escape newlines as \\n and any backticks."
+}}"""
+ 
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+ 
+        raw = message.content[0].text.strip()
+        raw = raw.replace("```json", "").replace("```", "").strip()
+ 
+        try:
+            parsed = json.loads(raw)
+        except Exception:
+            # Claude didn't return clean JSON — fall back to using the raw
+            # text as the blog body so the request doesn't just fail.
+            parsed = {
+                "title": keyword.title(),
+                "slug": re.sub(r"[^a-z0-9]+", "-", keyword.lower()).strip("-")[:60],
+                "excerpt": f"A complete guide to {keyword}.",
+                "category": "Branding",
+                "content": raw,
+            }
+ 
+        slug = parsed.get("slug") or re.sub(r"[^a-z0-9]+", "-", keyword.lower()).strip("-")[:60]
+ 
+        return JsonResponse({
+            "status": "success",
+            "keyword": keyword,
+            "slug": slug,
+            "title": parsed.get("title", keyword.title()),
+            "excerpt": parsed.get("excerpt", ""),
+            "category": parsed.get("category", "Branding"),
+            "content": parsed.get("content", raw),
+        })
+ 
+    except Exception as e:
+        print("GENERATE_BLOG ERROR =", str(e))
+        traceback.print_exc()
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+ 
+ 
+# ─── UNSPLASH IMAGE FETCH + PUSH TO GITHUB ────────────────────────────────
+def fetch_unsplash_image(keyword, slug, token, owner, repo, branch, headers):
+    """
+    Fetch a relevant image from Unsplash and push it to the GitHub repo.
+    Returns the image path for use in Blogs.tsx / blogPosts.ts.
+    """
+    unsplash_key = os.getenv("UNSPLASH_ACCESS_KEY")
+ 
+    if not unsplash_key:
+        return "/assets/blogs/seo-auto-generated.jpg"  # fallback
+ 
+    try:
+        search_url = "https://api.unsplash.com/search/photos"
+        params = {
+            "query": keyword,
+            "per_page": 1,
+            "orientation": "landscape",
+            "client_id": unsplash_key,
+        }
+        r = req.get(search_url, params=params, timeout=10)
+        data = r.json()
+ 
+        if not data.get("results"):
+            return "/assets/blogs/seo-auto-generated.jpg"
+ 
+        photo = data["results"][0]
+        image_url = photo["urls"]["regular"]
+ 
+        img_response = req.get(image_url, timeout=15)
+        if img_response.status_code != 200:
+            return "/assets/blogs/seo-auto-generated.jpg"
+ 
+        image_bytes = img_response.content
+        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+ 
+        image_filename = f"{slug}.jpg"
+        image_path = f"public/assets/blogs/{image_filename}"
+        github_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{image_path}"
+ 
+        sha = None
+        check = req.get(f"{github_url}?ref={branch}", headers=headers)
+        if check.status_code == 200:
+            sha = check.json().get("sha")
+ 
+        body = {
+            "message": f"[SEO] Add blog image: {slug}",
+            "content": image_base64,
+            "branch": branch,
+        }
+        if sha:
+            body["sha"] = sha
+ 
+        push_r = req.put(github_url, headers=headers, json=body)
+ 
+        if push_r.ok:
+            return f"/assets/blogs/{image_filename}"
+        return "/assets/blogs/seo-auto-generated.jpg"
+ 
+    except Exception as e:
+        print(f"Unsplash error: {e}")
+        return "/assets/blogs/seo-auto-generated.jpg"
+ 
+ 
+@csrf_exempt
+def push_to_github(request):
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "POST required"}, status=405)
+    try:
+        data = json.loads(request.body)
+        keyword = data.get("keyword", "")
+        slug = data.get("slug", "")
+        title = data.get("title", "")
+        excerpt = data.get("excerpt", "")
+        content = data.get("content", "")
+        category = data.get("category", "Branding")
+        published = data.get("publishedAt") or datetime.date.today().isoformat()
+ 
+        token = os.getenv("GITHUB_TOKEN")
+        owner = os.getenv("GITHUB_OWNER")
+        repo = os.getenv("GITHUB_REPO")
+        branch = os.getenv("GITHUB_BRANCH", "main")
+ 
+        if not all([token, owner, repo]):
+            return JsonResponse({
+                "status": "error",
+                "message": "GitHub is not configured on the backend "
+                            "(.env missing GITHUB_TOKEN / GITHUB_OWNER / GITHUB_REPO)."
+            }, status=500)
+ 
+        if not slug or not title:
+            return JsonResponse({"status": "error", "message": "slug and title are required"}, status=400)
+ 
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+ 
+        # IMPORTANT: escape BEFORE building the f-strings below.
+        # A backslash cannot appear inside the {...} part of an f-string
+        # on Python < 3.12 — doing it inline (like the original code did)
+        # is a SyntaxError on most installs.
+        title_esc = title.replace("'", "\\'")
+        excerpt_esc = excerpt.replace("'", "\\'")
+        content_esc = content.replace("`", "\\`")
+ 
+        image_path = fetch_unsplash_image(keyword, slug, token, owner, repo, branch, headers)
+        print(f"Image path: {image_path}")
+ 
+        def get_file(path):
+            url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}?ref={branch}"
+            r = req.get(url, headers=headers)
+            if r.status_code == 200:
+                d = r.json()
+                return base64.b64decode(d["content"]).decode("utf-8"), d["sha"]
+            return None, None
+ 
+        def push_file(path, new_content, sha, commit_msg):
+            url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
+            encoded = base64.b64encode(new_content.encode("utf-8")).decode("utf-8")
+            body = {"message": commit_msg, "content": encoded, "branch": branch}
+            if sha:
+                body["sha"] = sha
+            r = req.put(url, headers=headers, json=body)
+            return r.ok, r.json()
+ 
+        results = {}
+ 
+        # ── UPDATE Blogs.tsx ──────────────────────────────────────
+        blogs_path = "src/pages/Blogs.tsx"
+        blogs_content, blogs_sha = get_file(blogs_path)
+ 
+        if blogs_content:
+            ids = re.findall(r"id:\s*(\d+)", blogs_content)
+            next_id = max(int(i) for i in ids) + 1 if ids else 67
+ 
+            new_entry = f"""
+    {{
+      id: {next_id},
+      title: '{title_esc}',
+      excerpt: '{excerpt_esc}',
+      category: '{category}',
+      author: {{ name: 'Magsmen', avatar: '/assets/avatar/magsmen.png' }},
+      date: '{published}',
+      publishedAt: '{published}',
+      readTime: '5:00pm',
+      slug: '{slug}',
+      imageUrl: '{image_path}'
+    }},"""
+ 
+            marker = "\n];\n\n\nconst Insights"
+            if marker in blogs_content:
+                updated = blogs_content.replace(marker, new_entry + marker)
+                ok, resp = push_file(blogs_path, updated, blogs_sha, f"[SEO] Add blog entry: {title}")
+                results["blogs_tsx"] = "success" if ok else resp.get("message", "failed")
+            else:
+                results["blogs_tsx"] = "marker '];\\n\\n\\nconst Insights' not found in Blogs.tsx — entry not inserted"
+        else:
+            results["blogs_tsx"] = "could not read file"
+ 
+        # ── UPDATE blogPosts.ts ───────────────────────────────────
+        posts_path = "src/pages/blogPosts.ts"
+        posts_content, posts_sha = get_file(posts_path)
+ 
+        if posts_content:
+            new_post_entry = f"""
+  {{
+    slug: '{slug}',
+    title: '{title_esc}',
+    excerpt: '{excerpt_esc}',
+    category: '{category}',
+    publishedAt: '{published}',
+    readTime: '5 min read',
+    author: {{ name: 'Magsmen', avatar: '/assets/avatar/magsmen.png' }},
+    imageUrl: '{image_path}',
+    tags: ['{keyword}', 'branding', 'magsmen'],
+    relatedPosts: [],
+    content: `{content_esc}`
+  }},"""
+ 
+            if "\n];\n\nexport" in posts_content:
+                updated_posts = posts_content.replace("\n];\n\nexport", new_post_entry + "\n];\n\nexport")
+            else:
+                updated_posts = posts_content + "\n" + new_post_entry
+ 
+            ok2, resp2 = push_file(posts_path, updated_posts, posts_sha, f"[SEO] Add blog content: {title}")
+            results["blog_posts_ts"] = "success" if ok2 else resp2.get("message", "failed")
+        else:
+            results["blog_posts_ts"] = "could not read file"
+ 
+        return JsonResponse({
+            "status": "success",
+            "results": results,
+            "slug": slug,
+            "title": title,
+            "image_path": image_path,
+        })
+ 
+    except Exception as e:
+        traceback.print_exc()
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# def app_settings(request):
+#     return JsonResponse({
+#         "anthropic_connected": bool(os.getenv("ANTHROPIC_API_KEY")),
+#         "github_connected": bool(os.getenv("GITHUB_TOKEN")),
+#         "youtube_connected": bool(os.getenv("YOUTUBE_API_KEY")),
+#         "unsplash_connected": bool(os.getenv("UNSPLASH_ACCESS_KEY")),
+#         "github_owner": os.getenv("GITHUB_OWNER", ""),
+#         "github_repo": os.getenv("GITHUB_REPO", ""),
+#         "github_branch": os.getenv("GITHUB_BRANCH", "main"),
+#         "blog_folder": "src/blogs/",
+#         "meta_folder": "src/pages/",
+#         "youtube_channel_id": os.getenv("YOUTUBE_CHANNEL_ID", ""),
+#         "youtube_api_key": os.getenv("YOUTUBE_API_KEY", ""),  # ← ADD THIS
+#         "unsplash_access_key": os.getenv("UNSPLASH_ACCESS_KEY", ""),
+#     })
+
+
+
+
+# # Magsmen website dynamic blogs generate
+
+# def fetch_unsplash_image(keyword, slug, token, owner, repo, branch, headers):
+#     """
+#     Fetch relevant image from Unsplash and push to GitHub repo
+#     Returns the image path for use in Blogs.tsx
+#     """
+#     unsplash_key = os.getenv("UNSPLASH_ACCESS_KEY")
+    
+#     if not unsplash_key:
+#         return "/assets/blogs/seo-auto-generated.jpg"  # fallback
+    
+#     try:
+#         # Step 1 — Search Unsplash for relevant photo
+#         search_url = "https://api.unsplash.com/search/photos"
+#         params = {
+#             "query": keyword,
+#             "per_page": 1,
+#             "orientation": "landscape",
+#             "client_id": unsplash_key
+#         }
+#         r = req.get(search_url, params=params, timeout=10)
+#         data = r.json()
+        
+#         if not data.get("results"):
+#             return "/assets/blogs/seo-auto-generated.jpg"  # fallback
+        
+#         # Step 2 — Get the image URL
+#         photo = data["results"][0]
+#         image_url = photo["urls"]["regular"]  # good quality, not too large
+        
+#         # Step 3 — Download the image
+#         img_response = req.get(image_url, timeout=15)
+#         if img_response.status_code != 200:
+#             return "/assets/blogs/seo-auto-generated.jpg"
+        
+#         image_bytes = img_response.content
+#         image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+        
+#         # Step 4 — Push image to GitHub repo
+#         image_filename = f"{slug}.jpg"
+#         image_path = f"public/assets/blogs/{image_filename}"
+#         github_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{image_path}"
+        
+#         # Check if image already exists
+#         sha = None
+#         check = req.get(f"{github_url}?ref={branch}", headers=headers)
+#         if check.status_code == 200:
+#             sha = check.json().get("sha")
+        
+#         body = {
+#             "message": f"[SEO] Add blog image: {slug}",
+#             "content": image_base64,
+#             "branch": branch
+#         }
+#         if sha:
+#             body["sha"] = sha
+        
+#         push_r = req.put(github_url, headers=headers, json=body)
+        
+#         if push_r.ok:
+#             # Return the path that React uses
+#             return f"/assets/blogs/{image_filename}"
+#         else:
+#             return "/assets/blogs/seo-auto-generated.jpg"
+            
+#     except Exception as e:
+#         print(f"Unsplash error: {e}")
+#         return "/assets/blogs/seo-auto-generated.jpg"  # always fallback
+
+
+
+
+
+# @csrf_exempt
+# def push_to_github(request):
+#     if request.method != "POST":
+#         return JsonResponse({"status": "error", "message": "POST required"}, status=405)
+#     try:
+#         data = json.loads(request.body)
+#         keyword   = data.get("keyword", "")
+#         slug      = data.get("slug", "")
+#         title     = data.get("title", "")
+#         excerpt   = data.get("excerpt", "")
+#         content   = data.get("content", "")
+#         category  = data.get("category", "Branding")
+#         published = data.get("publishedAt", "")
+
+#         token  = os.getenv("GITHUB_TOKEN")
+#         owner  = os.getenv("GITHUB_OWNER")
+#         repo   = os.getenv("GITHUB_REPO")
+#         branch = os.getenv("GITHUB_BRANCH", "main")
+
+#         headers = {
+#             "Authorization": f"Bearer {token}",
+#             "Content-Type": "application/json"
+#         }
+
+#         # ── FETCH IMAGE FROM UNSPLASH ─────────────────────────────
+#         image_path = fetch_unsplash_image(
+#             keyword, slug, token, owner, repo, branch, headers
+#         )
+#         print(f"Image path: {image_path}")
+
+#         def get_file(path):
+#             url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}?ref={branch}"
+#             r = req.get(url, headers=headers)
+#             if r.status_code == 200:
+#                 d = r.json()
+#                 return base64.b64decode(d["content"]).decode("utf-8"), d["sha"]
+#             return None, None
+
+#         def push_file(path, new_content, sha, commit_msg):
+#             url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
+#             encoded = base64.b64encode(new_content.encode("utf-8")).decode("utf-8")
+#             body = {"message": commit_msg, "content": encoded, "branch": branch}
+#             if sha:
+#                 body["sha"] = sha
+#             r = req.put(url, headers=headers, json=body)
+#             return r.ok, r.json()
+
+#         results = {}
+
+#         # ── UPDATE Blogs.tsx ──────────────────────────────────────
+#         blogs_path = "src/pages/Blogs.tsx"
+#         blogs_content, blogs_sha = get_file(blogs_path)
+
+#         if blogs_content:
+#             import re
+#             ids = re.findall(r'id:\s*(\d+)', blogs_content)
+#             next_id = max(int(i) for i in ids) + 1 if ids else 67
+
+#             new_entry = f"""
+#     {{
+#       id: {next_id},
+#       title: '{title.replace("'", "\\'")}',
+#       excerpt: '{excerpt.replace("'", "\\'")}',
+#       category: '{category}',
+#       author: {{ name: 'Magsmen', avatar: '/assets/avatar/magsmen.png' }},
+#       date: '{published}',
+#       publishedAt: '{published}',
+#       readTime: '5:00pm',
+#       slug: '{slug}',
+#       imageUrl: '{image_path}'
+#     }},"""
+
+#             updated = blogs_content.replace(
+#                 "\n];\n\n\nconst Insights",
+#                 new_entry + "\n];\n\n\nconst Insights"
+#             )
+#             ok, resp = push_file(
+#                 blogs_path, updated, blogs_sha,
+#                 f"[SEO] Add blog entry: {title}"
+#             )
+#             results["blogs_tsx"] = "success" if ok else resp.get("message", "failed")
+#         else:
+#             results["blogs_tsx"] = "could not read file"
+
+#         # ── UPDATE blogPosts.ts ───────────────────────────────────
+#         posts_path = "src/pages/blogPosts.ts"
+#         posts_content, posts_sha = get_file(posts_path)
+
+#         if posts_content:
+#             new_post_entry = f"""
+#   {{
+#     slug: '{slug}',
+#     title: '{title.replace("'", "\\'")}',
+#     excerpt: '{excerpt.replace("'", "\\'")}',
+#     category: '{category}',
+#     publishedAt: '{published}',
+#     readTime: '5 min read',
+#     author: {{ name: 'Magsmen', avatar: '/assets/avatar/magsmen.png' }},
+#     imageUrl: '{image_path}',
+#     tags: ['{keyword}', 'branding', 'magsmen'],
+#     relatedPosts: [],
+#     content: `{content.replace("`", "\\`")}`
+#   }},"""
+
+#             if "\n];\n\nexport" in posts_content:
+#                 updated_posts = posts_content.replace(
+#                     "\n];\n\nexport",
+#                     new_post_entry + "\n];\n\nexport"
+#                 )
+#             else:
+#                 updated_posts = posts_content + "\n" + new_post_entry
+
+#             ok2, resp2 = push_file(
+#                 posts_path, updated_posts, posts_sha,
+#                 f"[SEO] Add blog content: {title}"
+#             )
+#             results["blog_posts_ts"] = "success" if ok2 else resp2.get("message", "failed")
+#         else:
+#             results["blog_posts_ts"] = "could not read file"
+
+#         return JsonResponse({
+#             "status": "success",
+#             "results": results,
+#             "slug": slug,
+#             "title": title,
+#             "image_path": image_path
+#         })
+
+#     except Exception as e:
+#         traceback.print_exc()
+#         return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+
+
+
+
+
+# @csrf_exempt
+# def generate_blog(request):
+
+#     # Allow only POST requests
+#     if request.method != "POST":
+#         return JsonResponse(
+#             {
+#                 "status": "error",
+#                 "message": "POST request required"
+#             },
+#             status=405
+#         )
+
+#     try:
+
+#         data = json.loads(request.body)
+
+#         keyword = data.get("keyword", "").strip()
+
+#         if not keyword:
+#             return JsonResponse(
+#                 {
+#                     "status": "error",
+#                     "message": "Keyword is required"
+#                 },
+#                 status=400
+#             )
+
+#         client = Anthropic(
+#             api_key=os.getenv("ANTHROPIC_API_KEY")
+#         )
+
+#         message = client.messages.create(
+#             model="claude-sonnet-4-6",
+#             max_tokens=2000,
+#             messages=[
+#                 {
+#                     "role": "user",
+#                     "content": f"""
+# Write a professional SEO blog about:
+
+# Keyword: {keyword}
+
+# Requirements:
+# - SEO optimized
+# - H1 title
+# - H2 headings
+# - Meta description
+# - 1200+ words
+# - Professional business tone
+# - Conclusion section
+# """
+#                 }
+#             ]
+#         )
+
+#         blog_content = message.content[0].text
+
+#         return JsonResponse(
+#             {
+#                 "status": "success",
+#                 "keyword": keyword,
+#                 "blog": blog_content
+#             }
+#         )
+
+#     except Exception as e:
+#         print("ERROR =", str(e))
+#         traceback.print_exc()
+
+#         return JsonResponse({
+#             "status": "error",
+#             "message": str(e)
+#         }, status=500)
+    
+
