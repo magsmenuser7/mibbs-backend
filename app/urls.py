@@ -1,7 +1,9 @@
 # accounts/urls.py
 from django.urls import path
+from rest_framework import views
 from .views import AllGuests, HomeEpisodes, RegisterView, LoginView, ai_generate, app_settings, generate_blog,logout_view,google_login,Register,Login,AssessmentCreateView,\
-ForgotPasswordView, VerifyOtpView, ResetPasswordView,LoginOtpSendView,LoginOtpVerifyView,IntalksStatsGet,AllEpisodes, submit_eod, submit_onboarding, test_api,youtube_stats,save_questionnaire, youtube_stats,push_to_github
+ForgotPasswordView, VerifyOtpView, ResetPasswordView,LoginOtpSendView,LoginOtpVerifyView,IntalksStatsGet,AllEpisodes, submit_eod, submit_exit, submit_onboarding, test_api,youtube_stats,save_questionnaire, youtube_stats,push_to_github
+from app import views
 
 urlpatterns = [
     path('registerUser', RegisterView.as_view(), name='register'),
@@ -29,6 +31,7 @@ urlpatterns = [
     path('ai-generate/', ai_generate, name='ai-generate'),        # NEW — required
     path('push-to-github/', push_to_github, name='push-to-github'),
     path('app-settings/', app_settings, name='app-settings'),
+    path('submit-exit/',submit_exit, name='submit-exit'),
 
 
 

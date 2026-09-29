@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import EODReport, Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate,NewBusinessQuestionnaire,ExistingBusinessQuestionnaire,EmployeeOnboarding
+from .models import EODReport, Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate,NewBusinessQuestionnaire,ExistingBusinessQuestionnaire,EmployeeOnboarding,EmployeeExit
 from simple_history.admin import SimpleHistoryAdmin
 import csv, json
 from django.http import HttpResponse
@@ -425,13 +425,130 @@ class EODReportAdmin(admin.ModelAdmin):
 
 
 
-admin.register(PieChartEntry,PieChartEntryAdmin)
+
+
+class EmployeeExitAdmin(admin.ModelAdmin):
+    list_display = (
+        "full_name_display", "employee_id", "department", "designation",
+        "last_working_day", "notice_period", "agreement_accepted",
+        "clearance_progress", "status", "created_at",
+    )
+    list_filter = (
+        "status", "department", "notice_period", "reason", "agreement_accepted",
+        "it_cleared", "finance_cleared", "hr_cleared", "manager_cleared",
+    )
+    search_fields = ("first_name", "last_name", "employee_id", "email", "manager")
+    date_hierarchy = "created_at"
+    ordering = ("-created_at",)
+
+    # Everything the employee submitted is read-only — staff only touch the
+    # clearance flags and status.
+    readonly_fields = (
+        "first_name", "last_name", "email", "employee_id", "department",
+        "designation", "manager", "last_working_day", "notice_period",
+        "reason", "reason_detail",
+        "agreement_accepted",
+        "handover_items",
+        "assets_returned",
+        "clearance_declared",
+        "ratings", "like_most", "improve", "recommend", "rejoin",
+        "signature", "sign_date",
+        "created_at", "updated_at",
+    )
+
+    fieldsets = (
+        ("Resignation Details", {
+            "fields": (
+                "first_name", "last_name", "email", "employee_id",
+                "department", "designation", "manager",
+                "last_working_day", "notice_period", "reason", "reason_detail",
+            )
+        }),
+        ("Exit Agreement", {
+            "description": "Confidentiality, non-disparagement, non-solicitation, company property, and dues & legal remedies — accepted by the employee at submission.",
+            "fields": ("agreement_accepted",)
+        }),
+        ("Handover", {"fields": ("handover_items",)}),
+        ("Asset Return", {"fields": ("assets_returned",)}),
+        ("Employee's No-Dues Declaration", {"fields": ("clearance_declared",)}),
+        ("Department Clearance — update as each department signs off", {
+            "fields": ("it_cleared", "finance_cleared", "hr_cleared", "manager_cleared", "status")
+        }),
+        ("Exit Interview", {
+            "fields": ("ratings", "like_most", "improve", "recommend", "rejoin")
+        }),
+        ("Declaration & Signature", {"fields": ("signature", "sign_date")}),
+        ("Record Info", {"fields": ("created_at", "updated_at")}),
+    )
+
+    actions = [
+        "mark_it_cleared",
+        "mark_finance_cleared",
+        "mark_hr_cleared",
+        "mark_manager_cleared",
+        "mark_settled_if_fully_cleared",
+    ]
+
+    def full_name_display(self, obj):
+        return obj.full_name
+    full_name_display.short_description = "Employee"
+
+    def clearance_progress(self, obj):
+        done = obj.clearance_count
+        color = "#176B44" if done == 4 else "#9A6B0A" if done else "#A09D95"
+        return format_html('<span style="color:{}; font-weight:600;">{}/4 Cleared</span>', color, done)
+    clearance_progress.short_description = "Clearance"
+
+    def mark_it_cleared(self, request, queryset):
+        updated = queryset.update(it_cleared=True)
+        self.message_user(request, f"IT clearance marked for {updated} request(s).")
+    mark_it_cleared.short_description = "Mark IT clearance complete"
+
+    def mark_finance_cleared(self, request, queryset):
+        updated = queryset.update(finance_cleared=True)
+        self.message_user(request, f"Finance clearance marked for {updated} request(s).")
+    mark_finance_cleared.short_description = "Mark Finance clearance complete"
+
+    def mark_hr_cleared(self, request, queryset):
+        updated = queryset.update(hr_cleared=True)
+        self.message_user(request, f"HR clearance marked for {updated} request(s).")
+    mark_hr_cleared.short_description = "Mark HR clearance complete"
+
+    def mark_manager_cleared(self, request, queryset):
+        updated = queryset.update(manager_cleared=True)
+        self.message_user(request, f"Manager clearance marked for {updated} request(s).")
+    mark_manager_cleared.short_description = "Mark Manager clearance complete"
+
+    def mark_settled_if_fully_cleared(self, request, queryset):
+        settled = 0
+        skipped = 0
+        for obj in queryset:
+            if obj.is_fully_cleared:
+                obj.status = EmployeeExit.STATUS_SETTLED
+                obj.save(update_fields=["status"])
+                settled += 1
+            else:
+                skipped += 1
+        self.message_user(
+            request,
+            f"{settled} request(s) marked as Settled. {skipped} skipped — not yet fully cleared."
+        )
+    mark_settled_if_fully_cleared.short_description = "Mark as Settled (only if fully cleared)"
+
+
+
+
+
+
+
+admin.site.register(PieChartEntry,PieChartEntryAdmin)
 admin.site.register(Assessment, AssessmentAdmin)
 admin.site.register(Intaklksstatspupdate, IntaklksstatspupdateAdmin)
 admin.site.register(NewBusinessQuestionnaire)
 admin.site.register(ExistingBusinessQuestionnaire)
 admin.site.register(EmployeeOnboarding,EmployeeAdmin)
 admin.site.register(EODReport, EODReportAdmin)
+admin.site.register(EmployeeExit, EmployeeExitAdmin)
 
 
 

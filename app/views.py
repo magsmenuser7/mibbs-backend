@@ -11,7 +11,7 @@ from django.contrib.auth import authenticate,login
 from django.contrib.auth import login as django_login
 from urllib3 import request
 from .serializers import RegisterSerializer,LoginSerializer,UserSerializer,ForgotPasswordSerializer,ResetPasswordSerializer,AssessmentSerializer,Intaklksstatspupdate,IntalksStatsSerializer,NewBusinessSerializer, ExistingBusinessSerializer,EODReportSerializer
-from .models import Intaklksstatspupdate, Users, EmployeeOnboarding,EODReport
+from .models import Intaklksstatspupdate, Users, EmployeeOnboarding,EODReport,EmployeeExit
 from django.contrib.auth import logout
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -40,6 +40,9 @@ import traceback
 import requests as req
 import base64
 import re
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import AllowAny
 
 
 MAX_FILE_SIZE = settings.MAX_FILE_SIZE
@@ -224,64 +227,7 @@ def submit_onboarding(request):
         </div>
         """ 
 
-        # subject = "New Employee Onboarding Submission"
-
-        # html_content = f"""
-
-        # <h3>Basic Details</h3>
-        # <p><b>Name:</b> {employee.first_name} {employee.last_name}</p>
-        # <p><b>Email:</b> {employee.email}</p>
-        # <p><b>Mobile:</b> {employee.mobile}</p>
-        # <p><b>Role:</b> {employee.role}</p>
-        # <p><b>Division:</b> {employee.division}</p>
-        # <p><b>Office:</b> {employee.office}</p>
-        # <p><b>Date of Joining:</b> {employee.doj}</p>
-
-        # <h3>Personal Details</h3>
-        # <p><b>Father Name:</b> {employee.father_name}</p>
-        # <p><b>Date of Birth:</b> {employee.dob}</p>
-        # <p><b>Address:</b> {employee.address}</p>
-        # <p><b>Emergency Contact:</b> {employee.emerg_name} - {employee.emerg_phone}</p>
-        # <p><b>Blood Group:</b> {employee.blood_group}</p>
-
-        # <h3>Bank Details</h3>
-        # <p><b>Account Name:</b> {employee.acc_name}</p>
-        # <p><b>Bank Name:</b> {employee.bank_name}</p>
-        # <p><b>Account Number:</b> {employee.acc_no}</p>
-        # <p><b>IFSC:</b> {employee.ifsc}</p>
-
-        # <h3>Professional References</h3>
-        # <p><b>Reference 1:</b> {employee.ref1_name} ({employee.ref1_desg})</p>
-        # <p>{employee.ref1_org} - {employee.ref1_contact}</p>
-
-        # <p><b>Reference 2:</b> {employee.ref2_name} ({employee.ref2_desg})</p>
-        # <p>{employee.ref2_org} - {employee.ref2_contact}</p>
-
-        # <h3>Documents</h3>
-
-        # {doc_link("Aadhaar Card", aadhaar)}
-        # {doc_link("PAN Card", pan)}
-        # {doc_link("Photo", photo)}
-
-        # {doc_link("10th Certificate", tenth)}
-        # {doc_link("12th Certificate", inter)}
-        # {doc_link("Degree Certificate", degree)}
-
-        # {doc_link("College ID", college)}
-        # {doc_link("NOC Letter", noc)}
-
-        # {doc_link("Relieving Letter", relieving_url)}
-        # {doc_link("Salary Proof", salary_url)}
-
-        # <h3>Declaration</h3>
-        # <p><b>Offer Letter Accepted:</b> {employee.offer_accepted}</p>
-        # <p><b>NDA Accepted:</b> {employee.nda_accepted}</p>
-        # <p><b>Signature:</b> {employee.signature}</p>
-        # <p><b>Sign Date:</b> {employee.sign_date}</p>
-
-        # <hr>
-        # <p>Submitted at: {employee.created_at}</p>
-        # """
+      
 
         email = EmailMultiAlternatives(
             subject,
@@ -1029,18 +975,18 @@ class AllGuests(APIView):
 
         return Response({"success": True, "data": data})
 
-def api_view(http_method_names):
-    raise NotImplementedError
+# def api_view(http_method_names):
+#     raise NotImplementedError
 
-class api_view:
-    def __init__(self, *args, **kwargs):
-        pass
+# class api_view:
+#     def __init__(self, *args, **kwargs):
+#         pass
 
-    def __call__(self, *args, **kwargs):
-        raise NotImplementedError
+#     def __call__(self, *args, **kwargs):
+#         raise NotImplementedError
 
-def api_view(http_method_names):
-    raise NotImplementedError
+# def api_view(http_method_names):
+#     raise NotImplementedError
 
 
 
@@ -1431,355 +1377,428 @@ def push_to_github(request):
 
 
 
+# Human-readable status per department, derived from the boolean flags
+# that staff toggle in Django Admin (or via the mark_*_cleared actions).
+def _dept_status(is_cleared):
+    return "Cleared" if is_cleared else "Pending Department Review"
+
+COMPANY_NAME = "Magsmen Strategy Consultants"
+
+# Human-readable labels for the checklist / declaration ids sent from the frontend.
+HANDOVER_LABELS = {
+    "h1": "Ongoing Projects & Client Accounts",
+    "h2": "Knowledge Transfer Sessions",
+    "h3": "Access & Login Credentials Shared",
+    "h4": "Pending Tasks Status Report",
+    "h5": "Team & Client Introductions",
+}
+
+ASSET_LABELS = {
+    "laptop": "Company Laptop & Charger",
+    "idcard": "Employee ID Card",
+    "accesscard": "Office Access / Biometric Card",
+    "sim": "Company SIM / Mobile Device",
+    "other": "Other Company Property",
+}
+
+CLEARANCE_LABELS = {
+    "itClr": "IT Department",
+    "financeClr": "Finance & Admin",
+    "hrClr": "Human Resources",
+    "mgrClr": "Reporting Manager",
+}
+
+RATING_LABELS = {
+    "rWorkCulture": "Work Culture & Environment",
+    "rGrowth": "Growth & Learning Opportunities",
+    "rManager": "Manager Support",
+    "rCompensation": "Compensation & Benefits",
+}
 
 
+@csrf_exempt
+@api_view(["POST"])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def submit_exit(request):
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# def app_settings(request):
-#     return JsonResponse({
-#         "anthropic_connected": bool(os.getenv("ANTHROPIC_API_KEY")),
-#         "github_connected": bool(os.getenv("GITHUB_TOKEN")),
-#         "youtube_connected": bool(os.getenv("YOUTUBE_API_KEY")),
-#         "unsplash_connected": bool(os.getenv("UNSPLASH_ACCESS_KEY")),
-#         "github_owner": os.getenv("GITHUB_OWNER", ""),
-#         "github_repo": os.getenv("GITHUB_REPO", ""),
-#         "github_branch": os.getenv("GITHUB_BRANCH", "main"),
-#         "blog_folder": "src/blogs/",
-#         "meta_folder": "src/pages/",
-#         "youtube_channel_id": os.getenv("YOUTUBE_CHANNEL_ID", ""),
-#         "youtube_api_key": os.getenv("YOUTUBE_API_KEY", ""),  # ← ADD THIS
-#         "unsplash_access_key": os.getenv("UNSPLASH_ACCESS_KEY", ""),
-#     })
-
-
-
-
-# # Magsmen website dynamic blogs generate
-
-# def fetch_unsplash_image(keyword, slug, token, owner, repo, branch, headers):
-#     """
-#     Fetch relevant image from Unsplash and push to GitHub repo
-#     Returns the image path for use in Blogs.tsx
-#     """
-#     unsplash_key = os.getenv("UNSPLASH_ACCESS_KEY")
+    # =========================
+    # REQUIRED FIELD VALIDATION
+    # =========================
+    required_fields = [
+        "firstName", "lastName", "email", "employeeId", "department",
+        "designation", "manager", "lastWorkingDay", "noticePeriod",
+        "reason", "signature", "signDate",
+    ]
+    missing = [f for f in required_fields if not request.POST.get(f)]
+    if missing:
+        return JsonResponse(
+            {"status": "error", "message": f"Missing required fields: {', '.join(missing)}"},
+            status=400,
+        )
     
-#     if not unsplash_key:
-#         return "/assets/blogs/seo-auto-generated.jpg"  # fallback
-    
-#     try:
-#         # Step 1 — Search Unsplash for relevant photo
-#         search_url = "https://api.unsplash.com/search/photos"
-#         params = {
-#             "query": keyword,
-#             "per_page": 1,
-#             "orientation": "landscape",
-#             "client_id": unsplash_key
-#         }
-#         r = req.get(search_url, params=params, timeout=10)
-#         data = r.json()
-        
-#         if not data.get("results"):
-#             return "/assets/blogs/seo-auto-generated.jpg"  # fallback
-        
-#         # Step 2 — Get the image URL
-#         photo = data["results"][0]
-#         image_url = photo["urls"]["regular"]  # good quality, not too large
-        
-#         # Step 3 — Download the image
-#         img_response = req.get(image_url, timeout=15)
-#         if img_response.status_code != 200:
-#             return "/assets/blogs/seo-auto-generated.jpg"
-        
-#         image_bytes = img_response.content
-#         image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-        
-#         # Step 4 — Push image to GitHub repo
-#         image_filename = f"{slug}.jpg"
-#         image_path = f"public/assets/blogs/{image_filename}"
-#         github_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{image_path}"
-        
-#         # Check if image already exists
-#         sha = None
-#         check = req.get(f"{github_url}?ref={branch}", headers=headers)
-#         if check.status_code == 200:
-#             sha = check.json().get("sha")
-        
-#         body = {
-#             "message": f"[SEO] Add blog image: {slug}",
-#             "content": image_base64,
-#             "branch": branch
-#         }
-#         if sha:
-#             body["sha"] = sha
-        
-#         push_r = req.put(github_url, headers=headers, json=body)
-        
-#         if push_r.ok:
-#             # Return the path that React uses
-#             return f"/assets/blogs/{image_filename}"
-#         else:
-#             return "/assets/blogs/seo-auto-generated.jpg"
-            
-#     except Exception as e:
-#         print(f"Unsplash error: {e}")
-#         return "/assets/blogs/seo-auto-generated.jpg"  # always fallback
+    # -----------------------------------------
+    # STEP 1: Read designation
+    # -----------------------------------------
+
+    designation = request.POST.get("designation", "").strip()
+
+    # -----------------------------------------
+    # STEP 2: Validate designation
+    # -----------------------------------------
+
+    allowed_designations = {
+        choice[0]
+        for choice in EmployeeExit.DESIGNATION_CHOICES
+    }
+
+    if not designation:
+        return JsonResponse(
+            {
+                "status": "error",
+                "message": "Designation is required."
+            },
+            status=400,
+        )
+
+    if designation not in allowed_designations:
+        return JsonResponse(
+            {
+                "status": "error",
+                "message": "Invalid designation selected."
+            },
+            status=400,
+        )
+
+    # -----------------------------------------
+    # Other validations
+    # -----------------------------------------
+
+    if request.POST.get("agreementCb") != "true":
+        return JsonResponse(
+            {
+                "status": "error",
+                "message": "The Resignation/Exit Agreement must be accepted before submission."
+            },
+            status=400,
+        )
+    def parse_json_field(name):
+        raw = request.POST.get(name, "")
+        try:
+            return json.loads(raw) if raw else {}
+        except (TypeError, ValueError):
+            return {}
+
+    exit_request = EmployeeExit.objects.create(
+        first_name=request.POST.get("firstName"),
+        last_name=request.POST.get("lastName"),
+        email=request.POST.get("email"),
+        employee_id=request.POST.get("employeeId"),
+        department=request.POST.get("department"),
+
+        # IMPORTANT
+        designation=designation,
+
+        manager=request.POST.get("manager"),
+        last_working_day=request.POST.get("lastWorkingDay"),
+        notice_period=request.POST.get("noticePeriod"),
+        reason=request.POST.get("reason"),
+        reason_detail=request.POST.get("reasonDetail"),
+
+        agreement_accepted=(
+            request.POST.get("agreementCb") == "true"
+        ),
+
+        handover_items=request.POST.get(
+            "handover_items",
+            ""
+        ),
+
+        assets_returned=json.loads(
+            request.POST.get(
+                "assets_returned",
+                "{}"
+            )
+        ),
+
+        clearance_declared=json.loads(
+            request.POST.get(
+                "clearance",
+                "{}"
+            )
+        ),
+
+        ratings=json.loads(
+            request.POST.get(
+                "ratings",
+                "{}"
+            )
+        ),
+
+        like_most=request.POST.get(
+            "likeMost",
+            ""
+        ),
+
+        improve=request.POST.get(
+            "improve",
+            ""
+        ),
+
+        recommend=request.POST.get(
+            "recommend",
+            ""
+        ),
+
+        rejoin=request.POST.get(
+            "rejoin",
+            ""
+        ),
+
+        signature=request.POST.get(
+            "signature",
+            ""
+        ),
+
+        sign_date=request.POST.get(
+            "signDate",
+            ""
+        ),
+    )
+
+    _send_hr_notification(exit_request)
+    _send_employee_confirmation(exit_request)
+
+    return JsonResponse({
+        "status": "success",
+        "message": "Exit request submitted and email sent successfully",
+        "id": exit_request.id,
+    })
 
 
+@csrf_exempt
+@api_view(["GET"])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def check_exit_status(request):
+    """
+    Returns the REAL department clearance status — i.e. whatever staff have
+    actually set in Django Admin (it_cleared / finance_cleared / hr_cleared /
+    manager_cleared), not the employee's own no-dues declaration from Step 5.
+
+    A department only flips to "Cleared" here once HR/IT/Finance/the manager
+    reviews the handover + no-dues declaration and marks it cleared in Admin
+    (individually, or via the "Mark IT/Finance/HR/Manager clearance complete"
+    bulk actions). Until then it stays "Pending Department Review".
+
+    Lookup is by employeeId + email together so a stray employee_id guess
+    can't pull up someone else's exit record.
+    """
+    employee_id = request.GET.get("employeeId")
+    email = request.GET.get("email")
+
+    if not employee_id or not email:
+        return JsonResponse(
+            {"status": "error", "message": "employeeId and email are required"},
+            status=400,
+        )
+
+    try:
+        e = EmployeeExit.objects.get(employee_id=employee_id, email__iexact=email)
+    except EmployeeExit.DoesNotExist:
+        return JsonResponse(
+            {"status": "error", "message": "No matching exit request found"},
+            status=404,
+        )
+    except EmployeeExit.MultipleObjectsReturned:
+        # Employee filed more than one exit request under this id/email —
+        # surface the most recent one (model's default ordering is -created_at).
+        e = EmployeeExit.objects.filter(employee_id=employee_id, email__iexact=email).first()
+
+    return JsonResponse({
+        "status": "success",
+        "employee_id": e.employee_id,
+        "overall_status": e.get_status_display(),
+        "departments": {
+            "itClr": {"label": "IT Department", "cleared": e.it_cleared, "text": _dept_status(e.it_cleared)},
+            "financeClr": {"label": "Finance & Admin", "cleared": e.finance_cleared, "text": _dept_status(e.finance_cleared)},
+            "hrClr": {"label": "Human Resources", "cleared": e.hr_cleared, "text": _dept_status(e.hr_cleared)},
+            "mgrClr": {"label": "Reporting Manager", "cleared": e.manager_cleared, "text": _dept_status(e.manager_cleared)},
+        },
+        "is_fully_cleared": e.is_fully_cleared,
+        "updated_at": e.updated_at,
+    })
 
 
+# =========================
+# HR / INTERNAL NOTIFICATION
+# =========================
+def _send_hr_notification(e):
+    header_style = "background-color: #f2f2f2; font-weight: bold; padding: 10px; border: 1px solid #ddd; color: #333;"
+    cell_style = "padding: 8px; border: 1px solid #ddd; vertical-align: top;"
+    label_style = "font-weight: bold; width: 30%; background-color: #fafafa; " + cell_style
 
-# @csrf_exempt
-# def push_to_github(request):
-#     if request.method != "POST":
-#         return JsonResponse({"status": "error", "message": "POST required"}, status=405)
-#     try:
-#         data = json.loads(request.body)
-#         keyword   = data.get("keyword", "")
-#         slug      = data.get("slug", "")
-#         title     = data.get("title", "")
-#         excerpt   = data.get("excerpt", "")
-#         content   = data.get("content", "")
-#         category  = data.get("category", "Branding")
-#         published = data.get("publishedAt", "")
+    handover_done = [HANDOVER_LABELS.get(i, i) for i in e.handover_items.split(",") if i]
+    handover_html = "<br>".join(f"✓ {item}" for item in handover_done) or "None marked complete"
 
-#         token  = os.getenv("GITHUB_TOKEN")
-#         owner  = os.getenv("GITHUB_OWNER")
-#         repo   = os.getenv("GITHUB_REPO")
-#         branch = os.getenv("GITHUB_BRANCH", "main")
+    assets_html = "<br>".join(
+        f"{'✓' if e.assets_returned.get(k) else '✗'} {label}"
+        for k, label in ASSET_LABELS.items()
+    )
 
-#         headers = {
-#             "Authorization": f"Bearer {token}",
-#             "Content-Type": "application/json"
-#         }
+    clearance_html = "<br>".join(
+        f"{'✓' if e.clearance_declared.get(k) else '✗'} {label}"
+        for k, label in CLEARANCE_LABELS.items()
+    )
 
-#         # ── FETCH IMAGE FROM UNSPLASH ─────────────────────────────
-#         image_path = fetch_unsplash_image(
-#             keyword, slug, token, owner, repo, branch, headers
-#         )
-#         print(f"Image path: {image_path}")
+    ratings_html = "<br>".join(
+        f"{label}: {e.ratings.get(k, '—')} / 5"
+        for k, label in RATING_LABELS.items()
+    )
 
-#         def get_file(path):
-#             url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}?ref={branch}"
-#             r = req.get(url, headers=headers)
-#             if r.status_code == 200:
-#                 d = r.json()
-#                 return base64.b64decode(d["content"]).decode("utf-8"), d["sha"]
-#             return None, None
+    subject = f"Employee Exit Request — {e.full_name} ({e.employee_id})"
 
-#         def push_file(path, new_content, sha, commit_msg):
-#             url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-#             encoded = base64.b64encode(new_content.encode("utf-8")).decode("utf-8")
-#             body = {"message": commit_msg, "content": encoded, "branch": branch}
-#             if sha:
-#                 body["sha"] = sha
-#             r = req.put(url, headers=headers, json=body)
-#             return r.ok, r.json()
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 800px; margin: auto; border: 1px solid #eee; padding: 20px;">
+        <h2 style="color: #2c3e50; border-bottom: 2px solid #E8510A; padding-bottom: 10px;">Employee Exit Request</h2>
 
-#         results = {}
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr><td colspan="2" style="{header_style}">Resignation Details</td></tr>
+            <tr><td style="{label_style}">Name</td><td style="{cell_style}">{e.full_name}</td></tr>
+            <tr><td style="{label_style}">Employee ID</td><td style="{cell_style}">{e.employee_id}</td></tr>
+            <tr><td style="{label_style}">Email</td><td style="{cell_style}">{e.email}</td></tr>
+            <tr><td style="{label_style}">Department</td><td style="{cell_style}">{e.department}</td></tr>
+            <tr><td style="{label_style}">Designation</td><td style="{cell_style}">{e.designation}</td></tr>
+            <tr><td style="{label_style}">Reporting Manager</td><td style="{cell_style}">{e.manager}</td></tr>
+            <tr><td style="{label_style}">Last Working Day</td><td style="{cell_style}">{e.last_working_day}</td></tr>
+            <tr><td style="{label_style}">Notice Period</td><td style="{cell_style}">{e.notice_period}</td></tr>
+            <tr><td style="{label_style}">Reason</td><td style="{cell_style}">{e.reason}</td></tr>
+            <tr><td style="{label_style}">Additional Context</td><td style="{cell_style}">{e.reason_detail or '—'}</td></tr>
 
-#         # ── UPDATE Blogs.tsx ──────────────────────────────────────
-#         blogs_path = "src/pages/Blogs.tsx"
-#         blogs_content, blogs_sha = get_file(blogs_path)
+            <tr><td colspan="2" style="{header_style}">Exit Agreement</td></tr>
+            <tr><td style="{label_style}">Accepted</td><td style="{cell_style}">{'Yes' if e.agreement_accepted else 'No'}</td></tr>
 
-#         if blogs_content:
-#             import re
-#             ids = re.findall(r'id:\s*(\d+)', blogs_content)
-#             next_id = max(int(i) for i in ids) + 1 if ids else 67
+            <tr><td colspan="2" style="{header_style}">Handover Checklist</td></tr>
+            <tr><td colspan="2" style="{cell_style}">{handover_html}</td></tr>
 
-#             new_entry = f"""
-#     {{
-#       id: {next_id},
-#       title: '{title.replace("'", "\\'")}',
-#       excerpt: '{excerpt.replace("'", "\\'")}',
-#       category: '{category}',
-#       author: {{ name: 'Magsmen', avatar: '/assets/avatar/magsmen.png' }},
-#       date: '{published}',
-#       publishedAt: '{published}',
-#       readTime: '5:00pm',
-#       slug: '{slug}',
-#       imageUrl: '{image_path}'
-#     }},"""
+            <tr><td colspan="2" style="{header_style}">Asset Return</td></tr>
+            <tr><td colspan="2" style="{cell_style}">{assets_html}</td></tr>
 
-#             updated = blogs_content.replace(
-#                 "\n];\n\n\nconst Insights",
-#                 new_entry + "\n];\n\n\nconst Insights"
-#             )
-#             ok, resp = push_file(
-#                 blogs_path, updated, blogs_sha,
-#                 f"[SEO] Add blog entry: {title}"
-#             )
-#             results["blogs_tsx"] = "success" if ok else resp.get("message", "failed")
-#         else:
-#             results["blogs_tsx"] = "could not read file"
+            <tr><td colspan="2" style="{header_style}">Employee's No-Dues Declaration</td></tr>
+            <tr><td colspan="2" style="{cell_style}">{clearance_html}</td></tr>
+            <tr><td style="{label_style}">Department Sign-Off</td><td style="{cell_style}">Not yet cleared — action required in Admin</td></tr>
 
-#         # ── UPDATE blogPosts.ts ───────────────────────────────────
-#         posts_path = "src/pages/blogPosts.ts"
-#         posts_content, posts_sha = get_file(posts_path)
+            <tr><td colspan="2" style="{header_style}">Exit Interview</td></tr>
+            <tr><td colspan="2" style="{cell_style}">{ratings_html}</td></tr>
+            <tr><td style="{label_style}">What they liked most</td><td style="{cell_style}">{e.like_most or '—'}</td></tr>
+            <tr><td style="{label_style}">What could improve</td><td style="{cell_style}">{e.improve or '—'}</td></tr>
+            <tr><td style="{label_style}">Would recommend Grofesion</td><td style="{cell_style}">{e.recommend or '—'}</td></tr>
+            <tr><td style="{label_style}">Would consider rejoining</td><td style="{cell_style}">{e.rejoin or '—'}</td></tr>
 
-#         if posts_content:
-#             new_post_entry = f"""
-#   {{
-#     slug: '{slug}',
-#     title: '{title.replace("'", "\\'")}',
-#     excerpt: '{excerpt.replace("'", "\\'")}',
-#     category: '{category}',
-#     publishedAt: '{published}',
-#     readTime: '5 min read',
-#     author: {{ name: 'Magsmen', avatar: '/assets/avatar/magsmen.png' }},
-#     imageUrl: '{image_path}',
-#     tags: ['{keyword}', 'branding', 'magsmen'],
-#     relatedPosts: [],
-#     content: `{content.replace("`", "\\`")}`
-#   }},"""
+            <tr><td colspan="2" style="{header_style}">Declaration</td></tr>
+            <tr><td style="{label_style}">Signature</td><td style="{cell_style}">{e.signature}</td></tr>
+            <tr><td style="{label_style}">Sign Date</td><td style="{cell_style}">{e.sign_date}</td></tr>
+        </table>
 
-#             if "\n];\n\nexport" in posts_content:
-#                 updated_posts = posts_content.replace(
-#                     "\n];\n\nexport",
-#                     new_post_entry + "\n];\n\nexport"
-#                 )
-#             else:
-#                 updated_posts = posts_content + "\n" + new_post_entry
+        <p style="font-size: 12px; color: #7f8c8d;">Submitted at: {e.created_at}</p>
+    </div>
+    """
 
-#             ok2, resp2 = push_file(
-#                 posts_path, updated_posts, posts_sha,
-#                 f"[SEO] Add blog content: {title}"
-#             )
-#             results["blog_posts_ts"] = "success" if ok2 else resp2.get("message", "failed")
-#         else:
-#             results["blog_posts_ts"] = "could not read file"
-
-#         return JsonResponse({
-#             "status": "success",
-#             "results": results,
-#             "slug": slug,
-#             "title": title,
-#             "image_path": image_path
-#         })
-
-#     except Exception as e:
-#         traceback.print_exc()
-#         return JsonResponse({"status": "error", "message": str(e)}, status=500)
+    email = EmailMultiAlternatives(
+        subject,
+        "",
+        settings.EMAIL_HOST_USER,
+        [
+            "hr@magsmen.com",
+            "kajasuresh522@gmail.com",
+            # "ceo@grofesion.com",
+        ],
+    )
+    email.attach_alternative(html_content, "text/html")
+    email.send()
 
 
+# =========================
+# EMPLOYEE CONFIRMATION + EXIT AGREEMENT
+# =========================
+def _send_employee_confirmation(e):
+    subject = f"Your Exit Request Has Been Received — {COMPANY_NAME}"
+
+    agreement_text = f"""
+{COMPANY_NAME} and {e.full_name} hereby agree to this Resignation/Exit Agreement effective {e.last_working_day}. As a reminder, the Employer's non-disclosure and non-distribution agreements are excepted below.
+
+The Employee and the Employer were governed by an employment agreement and mutually agreed to the terms and conditions of employment during the course of engagement.
+
+Based on the Employee's communication regarding separation, the Employer has processed the Employee's exit in accordance with internal policies and applicable procedures.
+
+CONFIDENTIALITY AND NON-DISCLOSURE
+The Employee agrees that they shall not disclose, distribute, publish, or communicate, in any format or forum, any information relating to the Employer or its customers, vendors, owners, shareholders, employees, partners, officers, directors, board members, or affiliated companies that is confidential or considered a trade secret.
+This includes, but is not limited to, information relating to patents, copyrights, trademarks, service marks, trade names, business processes, strategies, projects, products, or any intellectual property invented, developed, or worked upon by the Employer or the Employee during the course of employment.
+
+NON-DISPARAGEMENT
+The Employee agrees not to make any statements relating to their employment or this document that may be construed as libelous, slanderous, defamatory, critical, or otherwise derogatory toward the Employer or its employees, agents, partners, shareholders, officers, directors, board members, or affiliated companies.
+
+NON-SOLICITATION
+During the term of employment and for a period of one (1) year following the Employee's separation date, the Employee shall not, directly or indirectly, for personal benefit or on behalf of any third party other than the Employer, engage in any activity that may cause or attempt to cause any employee, vendor, contractor, consultant, or other agent of the Employer to terminate or disrupt their business relationship with the Employer.
+
+COMPANY PROPERTY AND ACCESS TO COMPANY RESOURCES
+The Employee certifies that all company property has been returned to the Employer, including but not limited to uniforms, laptops, mobile devices, pen drives, documents, creative files, login credentials, project documents, and any physical or electronic materials or intellectual property belonging to the Employer.
+The Employee further confirms that they do not retain access to any Employer-owned systems, servers, accounts, subscriptions, or other digital resources and have discontinued the use of such resources on any personal or home devices unless expressly authorized in writing by the Employer.
+
+CONFIDENTIALITY, DUES, AND LEGAL REMEDIES
+The Employer shall pay the Employee any outstanding approved dues, if applicable, in accordance with company policy.
+In the event of any violation of the terms stated herein, the aggrieved party shall have the right to pursue appropriate legal remedies available under applicable law, including injunctive relief and/or recovery of damages.
+
+Accepted digitally by: {e.signature} on {e.sign_date}
+"""
+
+    employee_message = f"""Dear {e.first_name},
+
+This email confirms that your exit request has been received and logged with {COMPANY_NAME}.
+
+Your submission summary:
+- Last Working Day: {e.last_working_day}
+- Notice Period: {e.notice_period}
+- Reporting Manager: {e.manager}
+- Exit Agreement: Accepted
+
+Your exit will now move through the following stages:
+
+1. Within 2 Days | Clearance Review
+   IT, Finance, and your reporting manager will begin reviewing your handover and no-dues declarations.
+
+2. Before Last Working Day | Asset Handover
+   Please complete physical return of any listed company property that has not yet been handed over.
+
+3. Last Working Day | Access Revocation
+   Your system and building access will be revoked and your handover will be formally confirmed.
+
+4. Within 45 Days | Full & Final Settlement
+   Your final settlement will be processed and paid out as per company policy.
+
+5. On Settlement | Relieving Letter & Experience Certificate
+   These will be emailed to you once your full and final settlement is complete.
+
+A copy of the Resignation/Exit Agreement you accepted is included below for your records. It governs confidentiality, non-disparagement, non-solicitation, and return of company property, and applies to you both during and after your employment with us.
+{agreement_text}
+
+For any queries, please contact the HR team:
+hr@magsmen.com
++91 90449 10449
+
+Best Regards,
+Magsmen Team
+"""
+
+    send_mail(
+        subject,
+        employee_message,
+        settings.EMAIL_HOST_USER,
+        [e.email],
+        fail_silently=False,
+    )
 
 
-
-
-# @csrf_exempt
-# def generate_blog(request):
-
-#     # Allow only POST requests
-#     if request.method != "POST":
-#         return JsonResponse(
-#             {
-#                 "status": "error",
-#                 "message": "POST request required"
-#             },
-#             status=405
-#         )
-
-#     try:
-
-#         data = json.loads(request.body)
-
-#         keyword = data.get("keyword", "").strip()
-
-#         if not keyword:
-#             return JsonResponse(
-#                 {
-#                     "status": "error",
-#                     "message": "Keyword is required"
-#                 },
-#                 status=400
-#             )
-
-#         client = Anthropic(
-#             api_key=os.getenv("ANTHROPIC_API_KEY")
-#         )
-
-#         message = client.messages.create(
-#             model="claude-sonnet-4-6",
-#             max_tokens=2000,
-#             messages=[
-#                 {
-#                     "role": "user",
-#                     "content": f"""
-# Write a professional SEO blog about:
-
-# Keyword: {keyword}
-
-# Requirements:
-# - SEO optimized
-# - H1 title
-# - H2 headings
-# - Meta description
-# - 1200+ words
-# - Professional business tone
-# - Conclusion section
-# """
-#                 }
-#             ]
-#         )
-
-#         blog_content = message.content[0].text
-
-#         return JsonResponse(
-#             {
-#                 "status": "success",
-#                 "keyword": keyword,
-#                 "blog": blog_content
-#             }
-#         )
-
-#     except Exception as e:
-#         print("ERROR =", str(e))
-#         traceback.print_exc()
-
-#         return JsonResponse({
-#             "status": "error",
-#             "message": str(e)
-#         }, status=500)
-    
 

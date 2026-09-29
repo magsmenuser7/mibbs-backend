@@ -569,3 +569,137 @@ class EODReport(models.Model):
 
     def __str__(self):
         return f"{self.employee_name} - {self.date_iso}"
+
+
+
+
+
+
+
+class EmployeeExit(models.Model):
+    # ── Designation choices ──
+    DESIGNATION_CHOICES = [
+        # Internship
+        ("Brand Strategy Intern", "Brand Strategy Intern"),
+        ("Business Development Intern", "Business Development Intern"),
+        ("Content & Digital Intern", "Content & Digital Intern"),
+        ("Design Intern", "Design Intern"),
+        ("Research Intern", "Research Intern"),
+        ("Management Trainee", "Management Trainee"),
+        ("HR Intern", "HR Intern"),
+        ("Web Developer Intern", "Web Developer Intern"),
+
+        # Full-Time
+        ("Business Associate", "Business Associate"),
+        ("Strategy Associate", "Strategy Associate"),
+        ("Operations Associate", "Operations Associate"),
+        ("Digital Associate", "Digital Associate"),
+        ("Senior Business Development", "Senior Business Development"),
+        ("Lead Strategist", "Lead Strategist"),
+        ("Head of Operations", "Head of Operations"),
+        ("HR", "HR"),
+        ("Junior Web Developer", "Junior Web Developer"),
+        ("Senior Web Developer", "Senior Web Developer"),
+        ("Client Strategy & Growth", "Client Strategy & Growth"),
+    ]
+
+    """
+    Stores a submission from the Employee Exit portal:
+    resignation details, exit agreement acceptance, handover progress,
+    asset return, department no-dues declarations, exit interview, and
+    the final digital signature/declaration.
+    """
+
+    STATUS_PENDING = "pending"
+    STATUS_IN_REVIEW = "in_review"
+    STATUS_CLEARED = "cleared"
+    STATUS_SETTLED = "settled"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_IN_REVIEW, "In Review"),
+        (STATUS_CLEARED, "Fully Cleared"),
+        (STATUS_SETTLED, "Settled"),
+    ]
+
+    # ── Resignation details (Step 1) ──
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    email = models.EmailField()
+    employee_id = models.CharField(max_length=50)
+    department = models.CharField(max_length=150)
+    designation = models.CharField(max_length=150,choices=DESIGNATION_CHOICES,)
+    manager = models.CharField(max_length=150)
+    last_working_day = models.DateField(null=True, blank=True)
+    notice_period = models.CharField(max_length=150)
+    reason = models.CharField(max_length=150)
+    reason_detail = models.TextField(blank=True, null=True)
+
+    # ── Exit Agreement (Step 2) ──
+    # Confidentiality, Non-Disparagement, Non-Solicitation, Company Property,
+    # and Dues & Legal Remedies clauses — accepted as a single checkbox.
+    agreement_accepted = models.BooleanField(default=False)
+
+    # ── Handover (Step 3) ──
+    # Comma-separated ids of handover checklist items the employee marked complete
+    handover_items = models.TextField(blank=True)
+
+    # ── Asset return (Step 4) ──
+    # {"laptop": true, "idcard": true, ...}
+    assets_returned = models.JSONField(default=dict, blank=True)
+
+    # ── Employee's own no-dues declaration (Step 5) ──
+    # {"itClr": true, "financeClr": true, "hrClr": true, "mgrClr": true}
+    clearance_declared = models.JSONField(default=dict, blank=True)
+
+    # ── Actual department sign-off — updated by staff via admin, not the employee ──
+    it_cleared = models.BooleanField(default=False)
+    finance_cleared = models.BooleanField(default=False)
+    hr_cleared = models.BooleanField(default=False)
+    manager_cleared = models.BooleanField(default=False)
+
+    # ── Exit interview (Step 6) ──
+    # {"rWorkCulture": 4, "rGrowth": 3, "rManager": 5, "rCompensation": 3}
+    ratings = models.JSONField(default=dict, blank=True)
+    like_most = models.TextField(blank=True, null=True)
+    improve = models.TextField(blank=True, null=True)
+    recommend = models.CharField(max_length=20, blank=True)  # Yes / Maybe / No
+    rejoin = models.CharField(max_length=20, blank=True)     # Yes / Maybe / No
+
+    # ── Declaration & signature (Step 7) ──
+    signature = models.CharField(max_length=150)
+    sign_date = models.CharField(max_length=50)
+
+    # ── Internal tracking ──
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Employee Exit Request"
+        verbose_name_plural = "Employee Exit Requests"
+
+    def __str__(self):
+        return f"{self.full_name} ({self.employee_id})"
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    @property
+    def is_fully_cleared(self):
+        return all([
+            self.it_cleared,
+            self.finance_cleared,
+            self.hr_cleared,
+            self.manager_cleared,
+        ])
+
+    @property
+    def clearance_count(self):
+        return sum([
+            self.it_cleared,
+            self.finance_cleared,
+            self.hr_cleared,
+            self.manager_cleared,
+        ])
