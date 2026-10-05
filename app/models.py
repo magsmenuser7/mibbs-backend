@@ -703,3 +703,205 @@ class EmployeeExit(models.Model):
             self.hr_cleared,
             self.manager_cleared,
         ])
+
+
+
+class Service(models.Model):
+    name = models.CharField(
+        max_length=150
+    )
+
+    slug = models.SlugField(
+        unique=True
+    )
+
+    description = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    is_active = models.BooleanField(
+        default=True
+    )
+
+    display_order = models.PositiveIntegerField(
+        default=0
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        ordering = [
+            "display_order",
+            "name",
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class ClientOnboarding(models.Model):
+
+    # =====================================================
+    # CLIENT & BUSINESS INFORMATION
+    # =====================================================
+
+    name = models.CharField(
+        max_length=150
+    )
+
+    email = models.EmailField()
+
+    mobile = models.CharField(
+        max_length=30
+    )
+
+    company_name = models.CharField(
+        max_length=200
+    )
+
+    address = models.TextField()
+
+
+    # =====================================================
+    # SELECTED SERVICES
+    # =====================================================
+
+    services = models.ManyToManyField(
+        Service,
+        related_name="client_onboardings",
+        blank=False,
+    )
+
+
+    # =====================================================
+    # ENGAGEMENT INFORMATION
+    # =====================================================
+
+    ENGAGEMENT_STAGE_CHOICES = [
+        (
+            "Pre-Proposal Exploration",
+            "Pre-Proposal Exploration",
+        ),
+        (
+            "Proposal Stage",
+            "Proposal Stage",
+        ),
+        (
+            "Engagement Confirmed",
+            "Engagement Confirmed",
+        ),
+        (
+            "Active Delivery",
+            "Active Delivery",
+        ),
+        (
+            "Post-Engagement",
+            "Post-Engagement",
+        ),
+    ]
+
+    engagement_reference_no = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+    )
+
+    engagement_stage = models.CharField(
+        max_length=50,
+        choices=ENGAGEMENT_STAGE_CHOICES,
+        default="Engagement Confirmed",
+    )
+
+    commencement_date = models.DateField(
+        blank=True,
+        null=True,
+    )
+
+    anticipated_duration = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+    )
+
+    magsmen_engagement_lead_name = models.CharField(
+        max_length=150,
+        blank=True,
+        null=True,
+    )
+
+    magsmen_engagement_lead_email = models.EmailField(
+        blank=True,
+        null=True,
+    )
+
+    client_primary_contact_name = models.CharField(
+        max_length=150,
+        blank=True,
+        null=True,
+    )
+
+    client_primary_contact_designation = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+    )
+
+    industry_sector = models.CharField(
+        max_length=150,
+        blank=True,
+        null=True,
+    )
+
+    areas_of_sensitivity = models.TextField(
+        blank=True,
+        null=True,
+    )
+
+    discovery_session_conducted = models.BooleanField(
+        default=False
+    )
+
+    discovery_session_date = models.DateField(
+        blank=True,
+        null=True,
+    )
+
+    special_confidentiality_notes = models.TextField(
+        blank=True,
+        null=True,
+    )
+
+
+    # =====================================================
+    # META
+    # =====================================================
+
+    is_submitted = models.BooleanField(
+        default=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        ordering = [
+            "-created_at"
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.name} - "
+            f"{self.company_name}"
+        )

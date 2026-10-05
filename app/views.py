@@ -1,5 +1,6 @@
 
 # views.py
+import datetime
 from email.quoprimime import header_check
 import os
 
@@ -10,8 +11,8 @@ from rest_framework import status
 from django.contrib.auth import authenticate,login
 from django.contrib.auth import login as django_login
 from urllib3 import request
-from .serializers import RegisterSerializer,LoginSerializer,UserSerializer,ForgotPasswordSerializer,ResetPasswordSerializer,AssessmentSerializer,Intaklksstatspupdate,IntalksStatsSerializer,NewBusinessSerializer, ExistingBusinessSerializer,EODReportSerializer
-from .models import Intaklksstatspupdate, Users, EmployeeOnboarding,EODReport,EmployeeExit
+from .serializers import RegisterSerializer,LoginSerializer,UserSerializer,ForgotPasswordSerializer,ResetPasswordSerializer,AssessmentSerializer,Intaklksstatspupdate,IntalksStatsSerializer,NewBusinessSerializer, ExistingBusinessSerializer,EODReportSerializer,ClientOnboardingSerializer, ServiceSerializer
+from .models import Intaklksstatspupdate, Users, EmployeeOnboarding,EODReport,EmployeeExit,ClientOnboarding, Service
 from django.contrib.auth import logout
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -1802,3 +1803,130 @@ Magsmen Team
 
 
 
+
+
+
+DEFAULT_SERVICES = [
+    {
+        "name": "Brand Creation",
+        "slug": "brand-creation",
+        "description": "Builds a complete, market-ready brand from the ground up with clear positioning, a distinctive identity, and a strategic foundation for recognition and growth.",
+        "display_order": 1,
+    },
+    {
+        "name": "Brand Audit",
+        "slug": "brand-audit",
+        "description": "Assesses the current brand, identifies what is working and where gaps or inconsistencies exist, and highlights priorities for strengthening it.",
+        "display_order": 2,
+    },
+    {
+        "name": "Corporate Rebranding",
+        "slug": "corporate-rebranding",
+        "description": "Transforms and repositions a corporate brand for its next stage of growth.",
+        "display_order": 3,
+    },
+    {
+        "name": "Stature by Magsmen",
+        "slug": "stature-by-magsmen",
+        "description": "Builds a clear, credible personal brand that represents an individual's expertise and professional presence.",
+        "display_order": 4,
+    },
+    {
+        "name": "LinkFluence",
+        "slug": "linkfluence",
+        "description": "Helps professionals and business leaders build a strong personal brand and professional presence, creating greater visibility, credibility, authority, and stronger business, networking, and professional opportunities.",
+        "display_order": 5,
+    },
+    {
+        "name": "Brand Expresso",
+        "slug": "brand-expresso",
+        "description": "A focused 90-day engagement to strengthen an existing brand through sharper direction, stronger positioning, improved communication, and a more consistent, competitive identity.",
+        "display_order": 6,
+    },
+    {
+        "name": "Legal & IP Consulting",
+        "slug": "legal-ip-consulting",
+        "description": "Provides strategic guidance on intellectual property and brand-related legal needs.",
+        "display_order": 7,
+    },
+]
+
+
+
+
+class ClientOnboardingUnifiedView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+
+        # Make sure the standard onboarding services exist.
+        # IMPORTANT:
+        # We do NOT assume IDs such as 1,2,3,4...
+        # Django creates/returns the real database IDs.
+
+        for item in DEFAULT_SERVICES:
+            Service.objects.get_or_create(
+                slug=item["slug"],
+                defaults={
+                    "name": item["name"],
+                    "description": item["description"],
+                    "display_order": item["display_order"],
+                    "is_active": True,
+                },
+            )
+
+        services = Service.objects.filter(
+            is_active=True
+        ).order_by(
+            "display_order",
+            "name",
+        )
+
+        serializer = ServiceSerializer(
+            services,
+            many=True,
+        )
+
+        return Response(
+            {
+                "success": True,
+                "services": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def post(self, request):
+
+        serializer = ClientOnboardingSerializer(
+            data=request.data
+        )
+
+        if not serializer.is_valid():
+
+            return Response(
+                {
+                    "success": False,
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        onboarding = serializer.save()
+
+        response_serializer = ClientOnboardingSerializer(
+            onboarding
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": (
+                    "Client onboarding and agreement acceptance "
+                    "submitted successfully."
+                ),
+                "id": onboarding.id,
+                "data": response_serializer.data,
+            },
+            status=status.HTTP_201_CREATED,
+        )

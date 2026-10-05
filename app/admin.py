@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import EODReport, Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate,NewBusinessQuestionnaire,ExistingBusinessQuestionnaire,EmployeeOnboarding,EmployeeExit
+from .models import ClientOnboarding, Service, EODReport, Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate,NewBusinessQuestionnaire,ExistingBusinessQuestionnaire,EmployeeOnboarding,EmployeeExit,ClientOnboarding, Service
 from simple_history.admin import SimpleHistoryAdmin
 import csv, json
 from django.http import HttpResponse
@@ -536,9 +536,136 @@ class EmployeeExitAdmin(admin.ModelAdmin):
     mark_settled_if_fully_cleared.short_description = "Mark as Settled (only if fully cleared)"
 
 
+class ServiceAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "name",
+        "slug",
+        "is_active",
+        "display_order",
+        "created_at",
+    )
+
+    list_filter = (
+        "is_active",
+    )
+
+    search_fields = (
+        "name",
+        "slug",
+        "description",
+    )
+
+    ordering = (
+        "display_order",
+        "name",
+    )
+
+    prepopulated_fields = {
+        "slug": ("name",)
+    }
 
 
 
+class ClientOnboardingAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "name",
+        "company_name",
+        "email",
+        "mobile",
+        "engagement_stage",
+        "industry_sector",
+        "is_submitted",
+        "created_at",
+    )
+
+    list_filter = (
+        "engagement_stage",
+        "industry_sector",
+        "discovery_session_conducted",
+        "is_submitted",
+        "created_at",
+    )
+
+    search_fields = (
+        "name",
+        "email",
+        "mobile",
+        "company_name",
+        "engagement_reference_no",
+        "client_primary_contact_name",
+    )
+
+    filter_horizontal = (
+        "services",
+    )
+
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+    )
+
+    ordering = (
+        "-created_at",
+    )
+
+    fieldsets = (
+
+        (
+            "Client Information",
+            {
+                "fields": (
+                    "name",
+                    "email",
+                    "mobile",
+                    "company_name",
+                    "address",
+                )
+            },
+        ),
+
+        (
+            "Selected Services",
+            {
+                "fields": (
+                    "services",
+                ),
+            },
+        ),
+
+        (
+            "Engagement Information",
+            {
+                "fields": (
+                    "engagement_reference_no",
+                    "engagement_stage",
+                    "commencement_date",
+                    "anticipated_duration",
+                    "magsmen_engagement_lead_name",
+                    "magsmen_engagement_lead_email",
+                    "client_primary_contact_name",
+                    "client_primary_contact_designation",
+                    "industry_sector",
+                    "areas_of_sensitivity",
+                    "discovery_session_conducted",
+                    "discovery_session_date",
+                    "special_confidentiality_notes",
+                )
+            },
+        ),
+
+        (
+            "Metadata",
+            {
+                "fields": (
+                    "is_submitted",
+                    "created_at",
+                    "updated_at",
+                )
+            },
+        ),
+    )
 
 
 admin.site.register(PieChartEntry,PieChartEntryAdmin)
@@ -549,6 +676,8 @@ admin.site.register(ExistingBusinessQuestionnaire)
 admin.site.register(EmployeeOnboarding,EmployeeAdmin)
 admin.site.register(EODReport, EODReportAdmin)
 admin.site.register(EmployeeExit, EmployeeExitAdmin)
+admin.site.register(ClientOnboarding, ClientOnboardingAdmin)
+admin.site.register(Service, ServiceAdmin)
 
 
 
