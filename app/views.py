@@ -1802,10 +1802,6 @@ Magsmen Team
     )
 
 
-
-
-
-
 DEFAULT_SERVICES = [
     {
         "name": "Brand Creation",
@@ -1852,6 +1848,572 @@ DEFAULT_SERVICES = [
 ]
 
 
+def send_client_onboarding_email(onboarding):
+    """
+    Send complete client onboarding details to HR.
+    """
+
+    recipient = "hr@magsmen.com"
+
+    # ---------------------------------------------------------
+    # SERVICES
+    # ---------------------------------------------------------
+
+    selected_services = onboarding.services.all()
+
+    service_names = [
+        service.name
+        for service in selected_services
+    ]
+
+    # ---------------------------------------------------------
+    # DATE FORMAT HELPER
+    # ---------------------------------------------------------
+
+    def format_date(value):
+        if not value:
+            return "Not provided"
+
+        return value.strftime("%d %B %Y")
+
+    # ---------------------------------------------------------
+    # BASIC VALUES
+    # ---------------------------------------------------------
+
+    client_name = onboarding.name or "Not provided"
+    email = onboarding.email or "Not provided"
+    mobile = onboarding.mobile or "Not provided"
+    company_name = onboarding.company_name or "Not provided"
+    address = onboarding.address or "Not provided"
+
+    # ---------------------------------------------------------
+    # ENGAGEMENT VALUES
+    # ---------------------------------------------------------
+
+    engagement_reference_no = (
+        onboarding.engagement_reference_no
+        or "Not provided"
+    )
+
+    engagement_stage = (
+        onboarding.engagement_stage
+        or "Not provided"
+    )
+
+    commencement_date = format_date(
+        onboarding.commencement_date
+    )
+
+    anticipated_duration = (
+        onboarding.anticipated_duration
+        or "Not provided"
+    )
+
+    magsmen_engagement_lead_name = (
+        onboarding.magsmen_engagement_lead_name
+        or "Not provided"
+    )
+
+    magsmen_engagement_lead_email = (
+        onboarding.magsmen_engagement_lead_email
+        or "Not provided"
+    )
+
+    client_primary_contact_name = (
+        onboarding.client_primary_contact_name
+        or "Not provided"
+    )
+
+    client_primary_contact_designation = (
+        onboarding.client_primary_contact_designation
+        or "Not provided"
+    )
+
+    industry_sector = (
+        onboarding.industry_sector
+        or "Not provided"
+    )
+
+    areas_of_sensitivity = (
+        onboarding.areas_of_sensitivity
+        or "Not provided"
+    )
+
+    discovery_session_conducted = (
+        "Yes"
+        if onboarding.discovery_session_conducted
+        else "No"
+    )
+
+    discovery_session_date = format_date(
+        onboarding.discovery_session_date
+    )
+
+    special_confidentiality_notes = (
+        onboarding.special_confidentiality_notes
+        or "Not provided"
+    )
+
+    is_submitted = (
+        "Yes"
+        if onboarding.is_submitted
+        else "No"
+    )
+
+    created_at = format_date(
+        onboarding.created_at
+    )
+
+    # ---------------------------------------------------------
+    # SERVICE TEXT
+    # ---------------------------------------------------------
+
+    if service_names:
+        services_text = "\n".join(
+            f"- {name}"
+            for name in service_names
+        )
+    else:
+        services_text = "No services selected"
+
+    # ---------------------------------------------------------
+    # PLAIN TEXT EMAIL
+    # ---------------------------------------------------------
+
+    text_content = f"""
+NEW CLIENT ONBOARDING SUBMISSION
+
+========================================
+CLIENT INFORMATION
+========================================
+
+Client Name:
+{client_name}
+
+Email:
+{email}
+
+Mobile:
+{mobile}
+
+Company / Business Name:
+{company_name}
+
+Address:
+{address}
+
+
+========================================
+SELECTED SERVICES
+========================================
+
+{services_text}
+
+
+========================================
+ENGAGEMENT INFORMATION
+========================================
+
+Engagement Reference No:
+{engagement_reference_no}
+
+Engagement Stage:
+{engagement_stage}
+
+Commencement Date:
+{commencement_date}
+
+Anticipated Duration:
+{anticipated_duration}
+
+Magsmen Engagement Lead Name:
+{magsmen_engagement_lead_name}
+
+Magsmen Engagement Lead Email:
+{magsmen_engagement_lead_email}
+
+
+========================================
+CLIENT PRIMARY CONTACT
+========================================
+
+Name:
+{client_primary_contact_name}
+
+Designation:
+{client_primary_contact_designation}
+
+Industry / Sector:
+{industry_sector}
+
+
+========================================
+DISCOVERY & CONFIDENTIALITY
+========================================
+
+Areas of Sensitivity:
+{areas_of_sensitivity}
+
+Discovery Session Conducted:
+{discovery_session_conducted}
+
+Discovery Session Date:
+{discovery_session_date}
+
+Special Confidentiality / NDA Notes:
+{special_confidentiality_notes}
+
+
+========================================
+SUBMISSION INFORMATION
+========================================
+
+Submitted:
+{is_submitted}
+
+Submitted On:
+{created_at}
+
+Client Onboarding ID:
+{onboarding.id}
+
+
+This is an automated notification from the Magsmen Client Portal.
+"""
+
+    # ---------------------------------------------------------
+    # HTML SERVICE LIST
+    # ---------------------------------------------------------
+
+    if service_names:
+        services_html = "".join(
+            f"""
+            <li style="margin-bottom:8px;">
+                {escape(name)}
+            </li>
+            """
+            for name in service_names
+        )
+    else:
+        services_html = """
+        <li>No services selected</li>
+        """
+
+    # ---------------------------------------------------------
+    # HTML EMAIL
+    # ---------------------------------------------------------
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>New Client Onboarding</title>
+    </head>
+
+    <body style="
+        margin:0;
+        padding:0;
+        background:#f5f6f8;
+        font-family:Arial, Helvetica, sans-serif;
+        color:#222;
+    ">
+
+        <div style="
+            max-width:760px;
+            margin:30px auto;
+            background:#ffffff;
+            border-radius:10px;
+            overflow:hidden;
+            border:1px solid #e5e5e5;
+        ">
+
+            <!-- HEADER -->
+
+            <div style="
+                background:#64378e;
+                padding:25px 30px;
+                color:#ffffff;
+            ">
+
+                <h1 style="
+                    margin:0;
+                    font-size:24px;
+                ">
+                    New Client Onboarding
+                </h1>
+
+                <p style="
+                    margin:8px 0 0;
+                    font-size:14px;
+                    opacity:0.9;
+                ">
+                    A new client onboarding submission has been received.
+                </p>
+
+            </div>
+
+
+            <!-- CLIENT INFORMATION -->
+
+            <div style="padding:25px 30px;">
+
+                <h2 style="
+                    font-size:18px;
+                    margin:0 0 15px;
+                    color:#64378e;
+                ">
+                    Client Information
+                </h2>
+
+                <table width="100%" cellpadding="8" cellspacing="0"
+                    style="border-collapse:collapse;">
+
+                    <tr>
+                        <td width="35%"><strong>Client Name</strong></td>
+                        <td>{escape(client_name)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Email</strong></td>
+                        <td>{escape(email)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Mobile</strong></td>
+                        <td>{escape(mobile)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Company / Business</strong></td>
+                        <td>{escape(company_name)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Address</strong></td>
+                        <td>{escape(address)}</td>
+                    </tr>
+
+                </table>
+
+
+                <!-- SERVICES -->
+
+                <h2 style="
+                    font-size:18px;
+                    margin:30px 0 15px;
+                    color:#64378e;
+                ">
+                    Selected Services
+                </h2>
+
+                <ul style="
+                    padding-left:20px;
+                    line-height:1.6;
+                ">
+                    {services_html}
+                </ul>
+
+
+                <!-- ENGAGEMENT -->
+
+                <h2 style="
+                    font-size:18px;
+                    margin:30px 0 15px;
+                    color:#64378e;
+                ">
+                    Engagement Information
+                </h2>
+
+                <table width="100%" cellpadding="8" cellspacing="0"
+                    style="border-collapse:collapse;">
+
+                    <tr>
+                        <td width="35%"><strong>Reference No</strong></td>
+                        <td>{escape(engagement_reference_no)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Engagement Stage</strong></td>
+                        <td>{escape(engagement_stage)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Commencement Date</strong></td>
+                        <td>{escape(commencement_date)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Anticipated Duration</strong></td>
+                        <td>{escape(anticipated_duration)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Magsmen Engagement Lead</strong></td>
+                        <td>{escape(magsmen_engagement_lead_name)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Lead Email</strong></td>
+                        <td>{escape(magsmen_engagement_lead_email)}</td>
+                    </tr>
+
+                </table>
+
+
+                <!-- PRIMARY CONTACT -->
+
+                <h2 style="
+                    font-size:18px;
+                    margin:30px 0 15px;
+                    color:#64378e;
+                ">
+                    Client Primary Contact
+                </h2>
+
+                <table width="100%" cellpadding="8" cellspacing="0"
+                    style="border-collapse:collapse;">
+
+                    <tr>
+                        <td width="35%"><strong>Name</strong></td>
+                        <td>{escape(client_primary_contact_name)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Designation</strong></td>
+                        <td>{escape(client_primary_contact_designation)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Industry / Sector</strong></td>
+                        <td>{escape(industry_sector)}</td>
+                    </tr>
+
+                </table>
+
+
+                <!-- CONFIDENTIALITY -->
+
+                <h2 style="
+                    font-size:18px;
+                    margin:30px 0 15px;
+                    color:#64378e;
+                ">
+                    Discovery & Confidentiality
+                </h2>
+
+                <table width="100%" cellpadding="8" cellspacing="0"
+                    style="border-collapse:collapse;">
+
+                    <tr>
+                        <td width="35%"><strong>Areas of Sensitivity</strong></td>
+                        <td>{escape(areas_of_sensitivity)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Discovery Session</strong></td>
+                        <td>{escape(discovery_session_conducted)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Discovery Date</strong></td>
+                        <td>{escape(discovery_session_date)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>NDA / Confidentiality Notes</strong></td>
+                        <td>{escape(special_confidentiality_notes)}</td>
+                    </tr>
+
+                </table>
+
+
+                <!-- SUBMISSION -->
+
+                <h2 style="
+                    font-size:18px;
+                    margin:30px 0 15px;
+                    color:#64378e;
+                ">
+                    Submission Information
+                </h2>
+
+                <table width="100%" cellpadding="8" cellspacing="0"
+                    style="border-collapse:collapse;">
+
+                    <tr>
+                        <td width="35%"><strong>Onboarding ID</strong></td>
+                        <td>{onboarding.id}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Submitted</strong></td>
+                        <td>{escape(is_submitted)}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>Submitted On</strong></td>
+                        <td>{escape(created_at)}</td>
+                    </tr>
+
+                </table>
+
+            </div>
+
+
+            <!-- FOOTER -->
+
+            <div style="
+                padding:18px 30px;
+                background:#f5f5f5;
+                color:#777;
+                font-size:12px;
+                text-align:center;
+            ">
+                Automated notification from the Magsmen Client Portal.
+            </div>
+
+        </div>
+
+    </body>
+    </html>
+    """
+
+    # ---------------------------------------------------------
+    # SEND EMAIL
+    # ---------------------------------------------------------
+
+    from_email = getattr(
+        settings,
+        "DEFAULT_FROM_EMAIL",
+        None
+    ) or getattr(
+        settings,
+        "EMAIL_HOST_USER",
+        None
+    )
+
+    subject = (
+        f"New Client Onboarding - "
+        f"{company_name} - #{onboarding.id}"
+    )
+
+    email_message = EmailMultiAlternatives(
+        subject=subject,
+        body=text_content,
+        from_email=from_email,
+        to=[recipient],
+        reply_to=[email] if onboarding.email else None,
+    )
+
+    email_message.attach_alternative(
+        html_content,
+        "text/html",
+    )
+
+    email_message.send(
+        fail_silently=False
+    )
 
 
 class ClientOnboardingUnifiedView(APIView):
@@ -1860,12 +2422,11 @@ class ClientOnboardingUnifiedView(APIView):
 
     def get(self, request):
 
-        # Make sure the standard onboarding services exist.
-        # IMPORTANT:
-        # We do NOT assume IDs such as 1,2,3,4...
-        # Django creates/returns the real database IDs.
+        # Make sure standard services exist.
+        # Real database IDs are always used.
 
         for item in DEFAULT_SERVICES:
+
             Service.objects.get_or_create(
                 slug=item["slug"],
                 defaults={
@@ -1912,10 +2473,61 @@ class ClientOnboardingUnifiedView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # -------------------------------------------------
+        # SAVE CLIENT ONBOARDING
+        # -------------------------------------------------
+
         onboarding = serializer.save()
 
-        response_serializer = ClientOnboardingSerializer(
-            onboarding
+        # -------------------------------------------------
+        # SEND COMPLETE DETAILS TO HR
+        # -------------------------------------------------
+
+        try:
+
+            send_client_onboarding_email(
+                onboarding
+            )
+
+        except Exception as email_error:
+
+            # Database save already succeeded.
+            # Log the email error instead of losing
+            # the client onboarding record.
+
+            print(
+                "CLIENT ONBOARDING EMAIL ERROR:",
+                str(email_error)
+            )
+
+            response_serializer = (
+                ClientOnboardingSerializer(
+                    onboarding
+                )
+            )
+
+            return Response(
+                {
+                    "success": True,
+                    "message": (
+                        "Client onboarding submitted successfully, "
+                        "but the HR notification email could not be sent."
+                    ),
+                    "email_sent": False,
+                    "id": onboarding.id,
+                    "data": response_serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+        # -------------------------------------------------
+        # SUCCESS
+        # -------------------------------------------------
+
+        response_serializer = (
+            ClientOnboardingSerializer(
+                onboarding
+            )
         )
 
         return Response(
@@ -1925,8 +2537,11 @@ class ClientOnboardingUnifiedView(APIView):
                     "Client onboarding and agreement acceptance "
                     "submitted successfully."
                 ),
+                "email_sent": True,
                 "id": onboarding.id,
                 "data": response_serializer.data,
             },
             status=status.HTTP_201_CREATED,
         )
+
+
