@@ -60,8 +60,8 @@ SECRET_KEY = 'django-insecure--_)07le$^boy4!twy%4$nu#katf51fr@4bd_5w*nncz7^w)r3e
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-ALLOWED_HOSTS = ['*']
-# ALLOWED_HOSTS = ['93.127.199.26', 'api.grofesion.com', 'www.api.grofesion.com']
+# ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['93.127.199.26', 'api.grofesion.com', 'www.api.grofesion.com']
 # ALLOWED_HOSTS = ['93.127.199.26', 'api.mibbs.ai', 'www.api.mibbs.ai']
 
 
@@ -131,10 +131,10 @@ CORS_ALLOWED_ORIGINS = [
     # "http://localhost:8080",
     # "http://localhost:5173",
     # "http://localhost:5174",
-    # "https://mibbs.ai",
-    # "https://intalks.in",
-    # "https://grofesion.com",
-    # "https://magsmen.com"
+    "https://mibbs.ai",
+    "https://intalks.in",
+    "https://grofesion.com",
+    "https://magsmen.com"
 ]
 
 
@@ -142,10 +142,10 @@ CSRF_TRUSTED_ORIGINS = [
     # "http://localhost:8080",
     # "http://localhost:5173",
     # "http://localhost:5174",
-    # "https://mibbs.ai",
-    # "https://intalks.in",
-    # "https://grofesion.com",
-    # "https://magsmen.com"
+    "https://mibbs.ai",
+    "https://intalks.in",
+    "https://grofesion.com",
+    "https://magsmen.com"
 ]
 
 
