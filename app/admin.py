@@ -536,136 +536,42 @@ class EmployeeExitAdmin(admin.ModelAdmin):
     mark_settled_if_fully_cleared.short_description = "Mark as Settled (only if fully cleared)"
 
 
+
 class ServiceAdmin(admin.ModelAdmin):
-
-    list_display = (
-        "name",
-        "slug",
-        "is_active",
-        "display_order",
-        "created_at",
-    )
-
-    list_filter = (
-        "is_active",
-    )
-
-    search_fields = (
-        "name",
-        "slug",
-        "description",
-    )
-
-    ordering = (
-        "display_order",
-        "name",
-    )
-
-    prepopulated_fields = {
-        "slug": ("name",)
-    }
+    list_display = ('name', 'slug', 'display_order', 'is_active')
+    list_filter = ('is_active',)
+    search_fields = ('name', 'slug')
+    prepopulated_fields = {'slug': ('name',)}
 
 
 
 class ClientOnboardingAdmin(admin.ModelAdmin):
-
     list_display = (
-        "name",
-        "company_name",
-        "email",
-        "mobile",
-        "engagement_stage",
-        "industry_sector",
-        "is_submitted",
-        "created_at",
+        'company_name', 
+        'name', 
+        'email', 
+        'mobile', 
+        'entity_type', 
+        'created_at'
     )
-
     list_filter = (
-        "engagement_stage",
-        "industry_sector",
-        "discovery_session_conducted",
-        "is_submitted",
-        "created_at",
+        'entity_type', 
+        'nda_accepted', 
+        'agreement_accepted', 
+        'created_at'
     )
-
     search_fields = (
-        "name",
-        "email",
-        "mobile",
-        "company_name",
-        "engagement_reference_no",
-        "client_primary_contact_name",
+        'company_name', 
+        'name', 
+        'email', 
+        'mobile', 
+        'cin_no', 
+        'gst_no', 
+        'pan_no'
     )
-
-    filter_horizontal = (
-        "services",
-    )
-
-    readonly_fields = (
-        "created_at",
-        "updated_at",
-    )
-
-    ordering = (
-        "-created_at",
-    )
-
-    fieldsets = (
-
-        (
-            "Client Information",
-            {
-                "fields": (
-                    "name",
-                    "email",
-                    "mobile",
-                    "company_name",
-                    "address",
-                )
-            },
-        ),
-
-        (
-            "Selected Services",
-            {
-                "fields": (
-                    "services",
-                ),
-            },
-        ),
-
-        (
-            "Engagement Information",
-            {
-                "fields": (
-                    "engagement_reference_no",
-                    "engagement_stage",
-                    "commencement_date",
-                    "anticipated_duration",
-                    "magsmen_engagement_lead_name",
-                    "magsmen_engagement_lead_email",
-                    "client_primary_contact_name",
-                    "client_primary_contact_designation",
-                    "industry_sector",
-                    "areas_of_sensitivity",
-                    "discovery_session_conducted",
-                    "discovery_session_date",
-                    "special_confidentiality_notes",
-                )
-            },
-        ),
-
-        (
-            "Metadata",
-            {
-                "fields": (
-                    "is_submitted",
-                    "created_at",
-                    "updated_at",
-                )
-            },
-        ),
-    )
+    readonly_fields = ('created_at', 'updated_at')
+    filter_horizontal = ('services',)  # Makes selecting multiple services user-friendly in Admin
+    ordering = ('-created_at',)
 
 
 admin.site.register(PieChartEntry,PieChartEntryAdmin)

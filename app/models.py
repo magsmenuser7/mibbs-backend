@@ -707,201 +707,40 @@ class EmployeeExit(models.Model):
 
 
 class Service(models.Model):
-    name = models.CharField(
-        max_length=150
-    )
-
-    slug = models.SlugField(
-        unique=True
-    )
-
-    description = models.TextField(
-        blank=True,
-        default=""
-    )
-
-    is_active = models.BooleanField(
-        default=True
-    )
-
-    display_order = models.PositiveIntegerField(
-        default=0
-    )
-
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-
-    updated_at = models.DateTimeField(
-        auto_now=True
-    )
-
-    class Meta:
-        ordering = [
-            "display_order",
-            "name",
-        ]
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True)
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    display_order = models.IntegerField(default=0)
 
     def __str__(self):
         return self.name
 
 
 class ClientOnboarding(models.Model):
-
-    # =====================================================
-    # CLIENT & BUSINESS INFORMATION
-    # =====================================================
-
-    name = models.CharField(
-        max_length=150
-    )
-
+    # Step 1: Client & Legal Entity Details
+    name = models.CharField(max_length=255)
     email = models.EmailField()
-
-    mobile = models.CharField(
-        max_length=30
-    )
-
-    company_name = models.CharField(
-        max_length=200
-    )
-
+    mobile = models.CharField(max_length=20)
+    company_name = models.CharField(max_length=255)
+    entity_type = models.CharField(max_length=100, blank=True, null=True)  # e.g., Private Limited Company, LLP, etc.
+    cin_no = models.CharField(max_length=100, blank=True, null=True)
+    gst_no = models.CharField(max_length=100, blank=True, null=True)
+    pan_no = models.CharField(max_length=100, blank=True, null=True)
     address = models.TextField()
 
+    # Step 2: Selected Services (Many-to-Many relationship)
+    services = models.ManyToManyField(Service, related_name="onboarded_clients")
 
-    # =====================================================
-    # SELECTED SERVICES
-    # =====================================================
+    # Step 3 & 4: NDA & Agreement Acceptances
+    nda_accepted = models.BooleanField(default=False)
+    agreement_accepted = models.BooleanField(default=False)
+    client_primary_contact_name = models.CharField(max_length=255, blank=True, null=True) # Client Signature
+    special_confidentiality_notes = models.TextField(blank=True, null=True)
 
-    services = models.ManyToManyField(
-        Service,
-        related_name="client_onboardings",
-        blank=False,
-    )
-
-
-    # =====================================================
-    # ENGAGEMENT INFORMATION
-    # =====================================================
-
-    ENGAGEMENT_STAGE_CHOICES = [
-        (
-            "Pre-Proposal Exploration",
-            "Pre-Proposal Exploration",
-        ),
-        (
-            "Proposal Stage",
-            "Proposal Stage",
-        ),
-        (
-            "Engagement Confirmed",
-            "Engagement Confirmed",
-        ),
-        (
-            "Active Delivery",
-            "Active Delivery",
-        ),
-        (
-            "Post-Engagement",
-            "Post-Engagement",
-        ),
-    ]
-
-    engagement_reference_no = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-    )
-
-    engagement_stage = models.CharField(
-        max_length=50,
-        choices=ENGAGEMENT_STAGE_CHOICES,
-        default="Engagement Confirmed",
-    )
-
-    commencement_date = models.DateField(
-        blank=True,
-        null=True,
-    )
-
-    anticipated_duration = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-    )
-
-    magsmen_engagement_lead_name = models.CharField(
-        max_length=150,
-        blank=True,
-        null=True,
-    )
-
-    magsmen_engagement_lead_email = models.EmailField(
-        blank=True,
-        null=True,
-    )
-
-    client_primary_contact_name = models.CharField(
-        max_length=150,
-        blank=True,
-        null=True,
-    )
-
-    client_primary_contact_designation = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-    )
-
-    industry_sector = models.CharField(
-        max_length=150,
-        blank=True,
-        null=True,
-    )
-
-    areas_of_sensitivity = models.TextField(
-        blank=True,
-        null=True,
-    )
-
-    discovery_session_conducted = models.BooleanField(
-        default=False
-    )
-
-    discovery_session_date = models.DateField(
-        blank=True,
-        null=True,
-    )
-
-    special_confidentiality_notes = models.TextField(
-        blank=True,
-        null=True,
-    )
-
-
-    # =====================================================
-    # META
-    # =====================================================
-
-    is_submitted = models.BooleanField(
-        default=True
-    )
-
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-
-    updated_at = models.DateTimeField(
-        auto_now=True
-    )
-
-    class Meta:
-        ordering = [
-            "-created_at"
-        ]
+    # Metadata & Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return (
-            f"{self.name} - "
-            f"{self.company_name}"
-        )
+        return f"{self.company_name} - {self.name}"

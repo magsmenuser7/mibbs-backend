@@ -1,8 +1,8 @@
 # accounts/urls.py
 from django.urls import path
 from rest_framework import views
-from .views import AllGuests, ClientOnboardingUnifiedView, HomeEpisodes, RegisterView, LoginView, ai_generate, app_settings, generate_blog,logout_view,google_login,Register,Login,AssessmentCreateView,\
-ForgotPasswordView, VerifyOtpView, ResetPasswordView,LoginOtpSendView,LoginOtpVerifyView,IntalksStatsGet,AllEpisodes, submit_eod, submit_exit, submit_onboarding, test_api,youtube_stats,save_questionnaire, youtube_stats,push_to_github
+from .views import AllGuests, HomeEpisodes, RegisterView, LoginView, ai_generate, app_settings, generate_blog,logout_view,google_login,Register,Login,AssessmentCreateView,\
+ForgotPasswordView, VerifyOtpView, ResetPasswordView,LoginOtpSendView,LoginOtpVerifyView,IntalksStatsGet,AllEpisodes, submit_eod, submit_exit, submit_onboarding, test_api,youtube_stats,save_questionnaire, youtube_stats,push_to_github,client_onboarding
 
 
 
@@ -33,7 +33,7 @@ urlpatterns = [
     path('push-to-github/', push_to_github, name='push-to-github'),
     path('app-settings/', app_settings, name='app-settings'),
     path('submit-exit/',submit_exit, name='submit-exit'),
-    path("client-onboarding/",ClientOnboardingUnifiedView.as_view(),name="client-onboarding",),
+    path("client-onboarding/",client_onboarding,name="client-onboarding",),
 
 
     # path("client-onboarding/",ClientOnboardingUnifiedView.as_view(),name="client-onboarding",),

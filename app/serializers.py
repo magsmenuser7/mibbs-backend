@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import EODReport, Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate,NewBusinessQuestionnaire,ExistingBusinessQuestionnaire,ClientOnboarding, Service
+from .models import EODReport, Users, Role, UserRole, Assessment,PieChartEntry,Intaklksstatspupdate,NewBusinessQuestionnaire,ExistingBusinessQuestionnaire,ClientOnboarding,Service
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
@@ -344,134 +344,31 @@ class EODReportSerializer(serializers.ModelSerializer):
 
 
 
-class ServiceSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Service
-
-        fields = [
-            "id",
-            "name",
-            "slug",
-            "description",
-            "is_active",
-            "display_order",
-        ]
-
-
 class ClientOnboardingSerializer(serializers.ModelSerializer):
-
-    service_ids = serializers.ListField(
-        child=serializers.IntegerField(min_value=1),
-        write_only=True,
-        required=True,
-    )
-
-    services = ServiceSerializer(
+    service_ids = serializers.PrimaryKeyRelatedField(
         many=True,
-        read_only=True,
+        queryset=Service.objects.all(),
+        source='services',
+        write_only=True
     )
 
     class Meta:
-
         model = ClientOnboarding
-
         fields = [
-            "id",
-
-            "name",
-            "email",
-            "mobile",
-            "company_name",
-            "address",
-
-            "engagement_reference_no",
-            "engagement_stage",
-            "commencement_date",
-            "anticipated_duration",
-
-            "magsmen_engagement_lead_name",
-            "magsmen_engagement_lead_email",
-
-            "client_primary_contact_name",
-            "client_primary_contact_designation",
-
-            "industry_sector",
-            "areas_of_sensitivity",
-
-            "discovery_session_conducted",
-            "discovery_session_date",
-
-            "special_confidentiality_notes",
-
-            "service_ids",
-            "services",
-
-            "is_submitted",
-
-            "created_at",
-            "updated_at",
+            'id',
+            'name',
+            'email',
+            'mobile',
+            'company_name',
+            'entity_type',
+            'cin_no',
+            'gst_no',
+            'pan_no',
+            'address',
+            'service_ids',
+            'services',
+            'client_primary_contact_name',
+            'special_confidentiality_notes',
+            'created_at',
         ]
-
-        read_only_fields = (
-            "id",
-            "services",
-            "is_submitted",
-            "created_at",
-            "updated_at",
-        )
-
-    def validate_service_ids(self, value):
-
-        if not value:
-            raise serializers.ValidationError(
-                "Select at least one service."
-            )
-
-        # Remove duplicate IDs
-        unique_ids = list(dict.fromkeys(value))
-
-        services = Service.objects.filter(
-            id__in=unique_ids,
-            is_active=True,
-        )
-
-        existing_ids = set(
-            services.values_list(
-                "id",
-                flat=True,
-            )
-        )
-
-        invalid_ids = [
-            service_id
-            for service_id in unique_ids
-            if service_id not in existing_ids
-        ]
-
-        if invalid_ids:
-
-            raise serializers.ValidationError(
-                f"One or more selected services are invalid: {invalid_ids}."
-            )
-
-        return unique_ids
-
-    def create(self, validated_data):
-
-        service_ids = validated_data.pop(
-            "service_ids"
-        )
-
-        onboarding = ClientOnboarding.objects.create(
-            **validated_data
-        )
-
-        services = Service.objects.filter(
-            id__in=service_ids,
-            is_active=True,
-        )
-
-        onboarding.services.set(services)
-
-        return onboarding
+        read_only_fields = ['services', 'created_at']
